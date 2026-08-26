@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- API keys must never leave the device, not even into a cloud backup. -->
+        <exclude domain="sharedpref" path="moodflix_keys.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="moodflix_keys.xml" />
+    </device-transfer>
+</data-extraction-rules>

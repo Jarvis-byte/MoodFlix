@@ -1,0 +1,5 @@
+# Copy this file to local.properties and fill in your values.
+sdk.dir=/path/to/Android/sdk
+
+# Free key from https://www.themoviedb.org/settings/api
+TMDB_API_KEY=your_tmdb_v3_key_here
