@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "MoodFlix"
 include(":app")
+include(":shared")

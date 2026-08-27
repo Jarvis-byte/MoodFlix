@@ -84,6 +84,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -104,10 +106,11 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.kotlinx.serialization)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
@@ -116,8 +119,6 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
 
-    implementation(libs.androidx.security.crypto)
-    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.browser)
 
     implementation(libs.room.runtime)

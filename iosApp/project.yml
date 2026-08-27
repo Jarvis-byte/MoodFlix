@@ -1,0 +1,42 @@
+name: MoodFlixIos
+options:
+  bundleIdPrefix: com.arka.moodflix
+  deploymentTarget:
+    iOS: "16.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+targets:
+  MoodFlixIos:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
+    info:
+      path: Sources/Info.plist
+      properties:
+        UILaunchScreen: {}
+        CFBundleDisplayName: MoodFlix
+        TMDB_API_KEY: $(TMDB_API_KEY)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arka.moodflix.ios
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    # Builds the shared KMP module and embeds Shared.framework into the app
+    # bundle. embedAndSignAppleFrameworkForXcode reads Xcode's own build
+    # environment (CONFIGURATION, SDK_NAME, BUILT_PRODUCTS_DIR, ...), so no
+    # manual framework search paths are needed here.
+    preBuildScripts:
+      - name: "Build shared KMP framework"
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        basedOnDependencyAnalysis: false

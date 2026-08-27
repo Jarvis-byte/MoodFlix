@@ -1,0 +1,118 @@
+package com.arka.moodflix.data.remote.tmdb
+
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.http.URLProtocol
+import io.ktor.http.path
+
+/**
+ * [apiKey] is supplied by each platform's own build config (BuildConfig on
+ * Android, an Xcode build setting on iOS) rather than baked into this shared
+ * module, so secret management stays platform-owned.
+ */
+class TmdbApi(
+    engine: HttpClient,
+    private val apiKey: String
+) {
+    private val client = engine.config {
+        defaultRequest {
+            url {
+                protocol = URLProtocol.HTTPS
+                host = "api.themoviedb.org"
+                path("3/")
+                parameters.append("api_key", apiKey)
+                parameters.append("language", "en-US")
+            }
+        }
+    }
+
+    suspend fun searchMovie(
+        query: String,
+        year: String? = null,
+        includeAdult: Boolean = false
+    ): TmdbSearchResponse = client.get("search/movie") {
+        parameter("query", query)
+        parameter("year", year)
+        parameter("include_adult", includeAdult)
+    }.body()
+
+    /**
+     * append_to_response lets us pull videos + watch providers in a single
+     * round trip instead of three. Worth it when we resolve 5-8 titles at once.
+     */
+    suspend fun getMovieDetail(
+        id: Int,
+        append: String = "videos,watch/providers"
+    ): TmdbMovieDetailDto = client.get("movie/$id") {
+        parameter("append_to_response", append)
+    }.body()
+
+    /** Used as a fallback when the AI call fails entirely. */
+    suspend fun discover(
+        genreId: String? = null,
+        minRating: Float? = null,
+        minVotes: Int = 300,
+        sortBy: String = "popularity.desc",
+        includeAdult: Boolean = false,
+        // Pipe-separated = OR. Must be paired with watch_region or TMDB ignores it.
+        withWatchProviders: String? = null,
+        watchRegion: String? = null,
+        page: Int = 1
+    ): TmdbSearchResponse = client.get("discover/movie") {
+        parameter("with_genres", genreId)
+        parameter("vote_average.gte", minRating)
+        parameter("vote_count.gte", minVotes)
+        parameter("sort_by", sortBy)
+        parameter("include_adult", includeAdult)
+        parameter("with_watch_providers", withWatchProviders)
+        parameter("watch_region", watchRegion)
+        parameter("page", page)
+    }.body()
+
+    /** Full provider catalog for a region, used to populate the OTT picker. */
+    suspend fun getWatchProviders(watchRegion: String): TmdbProviderListResponse =
+        client.get("watch/providers/movie") {
+            parameter("watch_region", watchRegion)
+        }.body()
+
+    // ---- TV (series) equivalents ----
+
+    suspend fun searchTv(
+        query: String,
+        year: String? = null,
+        includeAdult: Boolean = false
+    ): TmdbTvSearchResponse = client.get("search/tv") {
+        parameter("query", query)
+        parameter("first_air_date_year", year)
+        parameter("include_adult", includeAdult)
+    }.body()
+
+    suspend fun getTvDetail(
+        id: Int,
+        append: String = "videos,watch/providers"
+    ): TmdbTvDetailDto = client.get("tv/$id") {
+        parameter("append_to_response", append)
+    }.body()
+
+    /** TV fallback path, mirroring discover/movie. */
+    suspend fun discoverTv(
+        genreId: String? = null,
+        minRating: Float? = null,
+        minVotes: Int = 300,
+        sortBy: String = "popularity.desc",
+        withWatchProviders: String? = null,
+        watchRegion: String? = null,
+        page: Int = 1
+    ): TmdbTvSearchResponse = client.get("discover/tv") {
+        parameter("with_genres", genreId)
+        parameter("vote_average.gte", minRating)
+        parameter("vote_count.gte", minVotes)
+        parameter("sort_by", sortBy)
+        parameter("with_watch_providers", withWatchProviders)
+        parameter("watch_region", watchRegion)
+        parameter("page", page)
+    }.body()
+}

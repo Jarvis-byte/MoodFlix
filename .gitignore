@@ -9,6 +9,10 @@ build/
 # Local configuration
 local.properties
 keystore.properties
+iosApp/Config/Secrets.xcconfig
+
+# XcodeGen-generated project - regenerate with `xcodegen generate`
+iosApp/*.xcodeproj
 
 # Signing keys - never commit these
 *.jks
@@ -24,3 +28,8 @@ app/build/
 # Generated files
 .cxx/
 .externalNativeBuild/
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcworkspace

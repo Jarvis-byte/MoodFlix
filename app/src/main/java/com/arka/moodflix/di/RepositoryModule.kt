@@ -1,43 +1,59 @@
 package com.arka.moodflix.di
 
+import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.data.remote.ai.AiProviderClient
+import com.arka.moodflix.data.remote.ai.AiRouter
 import com.arka.moodflix.data.remote.ai.AnthropicClient
 import com.arka.moodflix.data.remote.ai.GeminiClient
 import com.arka.moodflix.data.remote.ai.OpenAiClient
-import com.arka.moodflix.data.repository.AiKeyRepositoryImpl
+import com.arka.moodflix.data.remote.tmdb.TmdbApi
 import com.arka.moodflix.data.repository.MovieRepositoryImpl
 import com.arka.moodflix.domain.repository.AiKeyRepository
 import com.arka.moodflix.domain.repository.MovieRepository
-import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.multibindings.IntoSet
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
 import javax.inject.Singleton
 
+/**
+ * MovieRepositoryImpl and the AI provider clients live in the shared KMP
+ * module with plain constructors (no @Inject - javax.inject isn't available
+ * outside the JVM/Android target), so they're wired up here with @Provides
+ * instead of @Binds.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class RepositoryModule {
+object RepositoryModule {
 
-    @Binds
+    @Provides
     @Singleton
-    abstract fun bindMovieRepository(impl: MovieRepositoryImpl): MovieRepository
+    fun provideMovieRepository(
+        tmdb: TmdbApi,
+        aiRouter: AiRouter,
+        prefs: UserPreferences
+    ): MovieRepository = MovieRepositoryImpl(tmdb, aiRouter, prefs)
 
-    @Binds
+    @Provides
     @Singleton
-    abstract fun bindAiKeyRepository(impl: AiKeyRepositoryImpl): AiKeyRepository
+    fun provideAiRouter(
+        clients: Set<@JvmSuppressWildcards AiProviderClient>,
+        keyRepository: AiKeyRepository
+    ): AiRouter = AiRouter(clients, keyRepository)
 
-    // Multibinding: adding a fourth provider later means adding one @Binds here
-    // and nothing else changes.
-    @Binds
+    // Multibinding: adding a fourth provider later means adding one @Provides
+    // here and nothing else changes.
+    @Provides
     @IntoSet
-    abstract fun bindGemini(impl: GeminiClient): AiProviderClient
+    fun provideGemini(client: HttpClient): AiProviderClient = GeminiClient(client)
 
-    @Binds
+    @Provides
     @IntoSet
-    abstract fun bindOpenAi(impl: OpenAiClient): AiProviderClient
+    fun provideOpenAi(client: HttpClient): AiProviderClient = OpenAiClient(client)
 
-    @Binds
+    @Provides
     @IntoSet
-    abstract fun bindAnthropic(impl: AnthropicClient): AiProviderClient
+    fun provideAnthropic(client: HttpClient): AiProviderClient = AnthropicClient(client)
 }
