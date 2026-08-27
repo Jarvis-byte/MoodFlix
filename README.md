@@ -8,17 +8,17 @@
 
 ## 📸 Screenshots
 
-> 📁 Add your screenshots to a `screenshots/` folder in the root of this repo, then the images below will render automatically.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141117.png" alt="Discover" width="220"/>
+  <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141129.png" alt="Loading" width="220"/>
+  <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141139.png" alt="Results" width="220"/>
+<img src="https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_142157.png" alt="Detail screen" width="220"/>
 
-| Discover | Loading | Results                                                                                                 | Detail |  
-|----------|---------------------------------------------------------------------------------------------------------|--------|
-| ![Discover screen](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141117.png) | ![Loading](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141129.png) | ![Results screen](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141139.png) | ![Detail screen](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/detail.png) |
+</p>
 
-| Settings |
-|----------|------------------|------------|
-| ![Settings screen](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141150.png) | 
-
-> **To add screenshots:** take them on your device → transfer to your Mac → create a `screenshots/` folder in the project root → commit and push. Replace `YOUR_USERNAME` with your GitHub username above.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141150.png" alt="Settings" width="220"/>
+</p>
 
 ---
 
