@@ -20,5 +20,14 @@ sealed interface RecommendationState {
     data object AskingAi : RecommendationState
     data class AiResponded(val titleCount: Int, val answeredBy: String) : RecommendationState
     data class Enriched(val movies: List<Movie>, val answeredBy: String) : RecommendationState
+
+    /**
+     * Every connected AI provider failed (or none are connected), so results
+     * came straight from TMDB's popularity/rating filters instead. There's no
+     * per-movie mood reasoning in this mode - that part genuinely needs the AI.
+     */
+    data class FallbackToTmdb(val movies: List<Movie>, val reason: com.arka.moodflix.core.AppError) :
+        RecommendationState
+
     data class Failed(val error: com.arka.moodflix.core.AppError) : RecommendationState
 }

@@ -47,7 +47,7 @@ class GeminiClient @Inject constructor(
     override val type = AiProviderType.GEMINI
 
     private val endpoint =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent"
 
     override suspend fun suggest(apiKey: String, prompt: String): AppResult<List<AiSuggestion>> =
         withContext(Dispatchers.IO) {

@@ -8,6 +8,7 @@ import com.arka.moodflix.data.remote.ai.PromptBuilder
 import com.arka.moodflix.data.remote.tmdb.TmdbApi
 import com.arka.moodflix.data.remote.tmdb.toDomain
 import com.arka.moodflix.domain.model.AiSuggestion
+import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.MoodQuery
 import com.arka.moodflix.domain.repository.MovieRepository
@@ -35,7 +36,12 @@ class MovieRepositoryImpl @Inject constructor(
         val routed = when (val result = aiRouter.suggest(PromptBuilder.build(query))) {
             is AppResult.Success -> result.data
             is AppResult.Failure -> {
-                emit(RecommendationState.Failed(result.error))
+                val fallback = discoverFallback(query)
+                if (fallback.isEmpty()) {
+                    emit(RecommendationState.Failed(result.error))
+                } else {
+                    emit(RecommendationState.FallbackToTmdb(fallback, result.error))
+                }
                 return@flow
             }
         }
@@ -47,17 +53,43 @@ class MovieRepositoryImpl @Inject constructor(
         val movies = enrich(routed.suggestions, country, query.minRating)
 
         if (movies.isEmpty()) {
-            emit(RecommendationState.Failed(AppError.Unknown("Could not find these titles on TMDB")))
+            val fallback = discoverFallback(query)
+            if (fallback.isEmpty()) {
+                emit(RecommendationState.Failed(AppError.Unknown("Could not find these titles on TMDB")))
+            } else {
+                emit(RecommendationState.FallbackToTmdb(fallback, AppError.ParseFailed()))
+            }
         } else {
             emit(RecommendationState.Enriched(movies, answeredBy))
         }
     }.flowOn(Dispatchers.IO)
 
-    /**
-     * Resolves every AI title against TMDB in parallel. Titles that don't
-     * resolve are dropped silently rather than shown as broken cards - that is
-     * the safety net for the occasional hallucinated film.
-     */
+    private suspend fun discoverFallback(query: MoodQuery): List<Movie> = coroutineScope {
+        val country = prefs.watchCountry.first()
+
+        val hits = runCatching {
+            tmdb.discover(
+                genreId = query.genre.takeIf { it != Genre.ANY }?.tmdbId?.toString(),
+                minRating = query.minRating,
+                sortBy = "vote_average.desc"
+            ).results
+        }.getOrDefault(emptyList())
+
+        hits.take(10)
+            .map { hit ->
+                async {
+                    runCatching {
+                        tmdb.getMovieDetail(hit.id).toDomain(
+                            moodReason = "",
+                            countryCode = country
+                        )
+                    }.getOrNull()
+                }
+            }
+            .mapNotNull { it.await() }
+            .distinctBy { it.tmdbId }
+    }
+
     private suspend fun enrich(
         suggestions: List<AiSuggestion>,
         country: String,
@@ -80,7 +112,6 @@ class MovieRepositoryImpl @Inject constructor(
                 }
             }
             .mapNotNull { it.await() }
-            // The model is asked for a quality bar but cannot enforce it, so we do.
             .filter { it.rating >= minRating - RATING_TOLERANCE || it.voteCount < LOW_VOTE_FLOOR }
             .distinctBy { it.tmdbId }
     }
@@ -93,9 +124,7 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        // TMDB skews slightly lower than IMDb, so allow a little slack.
         const val RATING_TOLERANCE = 0.4f
-        // Obscure films with few votes get a pass; the rating is not meaningful yet.
         const val LOW_VOTE_FLOOR = 200
     }
 }

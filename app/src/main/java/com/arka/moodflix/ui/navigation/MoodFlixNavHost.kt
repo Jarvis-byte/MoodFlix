@@ -1,5 +1,6 @@
 package com.arka.moodflix.ui.navigation
 
+import android.net.Uri
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,16 +13,32 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.arka.moodflix.domain.model.Genre
+import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.ui.detail.DetailScreen
 import com.arka.moodflix.ui.discover.DiscoverScreen
+import com.arka.moodflix.ui.results.ResultsScreen
 import com.arka.moodflix.ui.settings.SettingsScreen
 
 object Routes {
     const val DISCOVER = "discover"
     const val SETTINGS = "settings"
     const val DETAIL = "detail/{movieId}"
+    const val RESULTS = "results/{mood}/{genre}/{minRating}/{freeText}"
+
+    // A blank freeText segment breaks route matching (double slash), so an
+    // empty string is encoded as this sentinel instead of Uri.encode("").
+    private const val BLANK_TEXT = "_blank_"
 
     fun detail(movieId: Int) = "detail/$movieId"
+
+    fun results(mood: Mood, genre: Genre, minRating: Float, freeText: String): String {
+        val encodedText = if (freeText.isBlank()) BLANK_TEXT else Uri.encode(freeText)
+        return "results/${mood.name}/${genre.name}/$minRating/$encodedText"
+    }
+
+    fun decodeFreeText(raw: String): String =
+        if (raw == BLANK_TEXT) "" else Uri.decode(raw)
 }
 
 @Composable
@@ -45,8 +62,9 @@ fun MoodFlixNavHost(
         composable(Routes.DISCOVER) {
             DiscoverScreen(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                onOpenMovie = { id -> navController.navigate(Routes.detail(id)) },
-                onPlayTrailer = { key -> onOpenUrl("https://www.youtube.com/watch?v=$key") }
+                onSearch = { mood, genre, minRating, freeText ->
+                    navController.navigate(Routes.results(mood, genre, minRating, freeText))
+                }
             )
         }
 
@@ -54,6 +72,22 @@ fun MoodFlixNavHost(
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenUrl = onOpenUrl
+            )
+        }
+
+        composable(
+            route = Routes.RESULTS,
+            arguments = listOf(
+                navArgument("mood") { type = NavType.StringType },
+                navArgument("genre") { type = NavType.StringType },
+                navArgument("minRating") { type = NavType.FloatType },
+                navArgument("freeText") { type = NavType.StringType }
+            )
+        ) {
+            ResultsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenMovie = { id -> navController.navigate(Routes.detail(id)) },
+                onPlayTrailer = { key -> onOpenUrl("https://www.youtube.com/watch?v=$key") }
             )
         }
 
