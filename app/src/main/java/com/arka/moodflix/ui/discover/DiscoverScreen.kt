@@ -35,8 +35,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arka.moodflix.domain.model.Genre
@@ -51,7 +53,7 @@ import com.arka.moodflix.ui.components.RatingSlider
 fun DiscoverScreen(
     onOpenSettings: () -> Unit,
     onSearch: (Mood, Genre, Float, String, List<Int>, MediaTypeFilter) -> Unit,
-    viewModel: DiscoverViewModel = hiltViewModel()
+    viewModel: DiscoverViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val hasProvider by viewModel.hasAnyProvider.collectAsStateWithLifecycle()
@@ -88,7 +90,7 @@ fun DiscoverScreen(
                 .fillMaxSize()
                 .padding(padding),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
 
             item {
@@ -106,6 +108,8 @@ fun DiscoverScreen(
             }
 
             item {
+                SectionHeader("Looking for")
+                Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MediaTypeFilter.entries.forEach { filter ->
                         MoodChip(
@@ -119,6 +123,8 @@ fun DiscoverScreen(
             }
 
             item {
+                SectionHeader("Mood")
+                Spacer(Modifier.height(8.dp))
                 MoodGrid(
                     selected = state.selectedMood,
                     onSelect = { viewModel.onEvent(DiscoverEvent.MoodSelected(it)) }
@@ -126,13 +132,12 @@ fun DiscoverScreen(
             }
 
             item {
-                Text(
-                    text = "Genre",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                SectionHeader("Genre")
                 Spacer(Modifier.height(8.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyRow(
+                    contentPadding = PaddingValues(start = 4.dp, end = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     items(Genre.entries.toList()) { genre ->
                         MoodChip(
                             label = genre.label,
@@ -156,13 +161,12 @@ fun DiscoverScreen(
 
             if (state.availableProviders.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "Where do you watch?",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    SectionHeader("Where do you watch?")
                     Spacer(Modifier.height(8.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyRow(
+                        contentPadding = PaddingValues(start = 4.dp, end = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         item {
                             MoodChip(
                                 label = "All platforms",
@@ -267,9 +271,21 @@ fun DiscoverScreen(
 }
 
 @Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title.uppercase(),
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.8.sp
+        ),
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
 private fun MoodGrid(
     selected: Mood?,
-    onSelect: (Mood) -> Unit
+    onSelect: (Mood) -> Unit,
 ) {
     // A simple wrapped flow: two moods per row keeps labels readable
     // without pulling in a FlowRow experimental API.
