@@ -64,8 +64,17 @@ class DiscoverViewModel @Inject constructor(
         .map { list -> list.any { it.hasKey } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    /** Whether the Discover screen's one-time intro tooltip still needs to be shown. */
+    val shouldShowIntro: StateFlow<Boolean> = prefs.discoverIntroSeen
+        .map { seen -> !seen }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     init {
         loadOttProviders()
+    }
+
+    fun markIntroSeen() {
+        viewModelScope.launch { prefs.markDiscoverIntroSeen() }
     }
 
     private fun loadOttProviders() {

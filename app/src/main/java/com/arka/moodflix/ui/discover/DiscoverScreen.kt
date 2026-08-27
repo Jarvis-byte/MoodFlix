@@ -26,12 +26,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +52,7 @@ import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.ui.components.MoodChip
 import com.arka.moodflix.ui.components.ProviderChip
 import com.arka.moodflix.ui.components.RatingSlider
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +63,21 @@ fun DiscoverScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val hasProvider by viewModel.hasAnyProvider.collectAsStateWithLifecycle()
+    val shouldShowIntro by viewModel.shouldShowIntro.collectAsStateWithLifecycle()
+
+    // A real TooltipState hoisted here (not created fresh inside the tooltip
+    // block below) so we can call .show() on it programmatically - PlainTooltip
+    // only reveals itself on long-press by default, which nobody discovers
+    // on their own, so the first-run coach mark triggers it explicitly instead.
+    val settingsTooltipState = rememberTooltipState()
+
+    LaunchedEffect(shouldShowIntro) {
+        if (shouldShowIntro) {
+            delay(700) // let the screen settle before popping it
+            settingsTooltipState.show()
+            viewModel.markIntroSeen()
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -70,12 +91,18 @@ fun DiscoverScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Connect your AI provider") } },
+                        state = settingsTooltipState
+                    ) {
+                        IconButton(onClick = onOpenSettings) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -241,22 +268,28 @@ fun DiscoverScreen(
                         Text("Find me something", style = MaterialTheme.typography.labelLarge)
                     }
 
-                    OutlinedButton(
-                        onClick = {
-                            val mood = viewModel.surpriseMood()
-                            onSearch(
-                                mood,
-                                state.selectedGenre,
-                                state.minRating,
-                                state.freeText,
-                                state.selectedProviderIds.toList(),
-                                state.mediaFilter
-                            )
-                        },
-                        modifier = Modifier.height(54.dp),
-                        shape = RoundedCornerShape(16.dp)
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Surprise me with a random mood") } },
+                        state = rememberTooltipState()
                     ) {
-                        Icon(Icons.Default.Casino, contentDescription = "Surprise me")
+                        OutlinedButton(
+                            onClick = {
+                                val mood = viewModel.surpriseMood()
+                                onSearch(
+                                    mood,
+                                    state.selectedGenre,
+                                    state.minRating,
+                                    state.freeText,
+                                    state.selectedProviderIds.toList(),
+                                    state.mediaFilter
+                                )
+                            },
+                            modifier = Modifier.height(54.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(Icons.Default.Casino, contentDescription = "Surprise me")
+                        }
                     }
                 }
             }
