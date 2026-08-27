@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "847206262229",
+    "project_id": "moodflix-ae834",
+    "storage_bucket": "moodflix-ae834.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:847206262229:android:dbf8fc7388334c7cedc95c",
+        "android_client_info": {
+          "package_name": "com.arka.moodflix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhOed4IvCKEBjcAHI7Ap4qa5RgK1uMegg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -246,6 +246,7 @@ fun DiscoverScreen(
                     Button(
                         onClick = {
                             state.selectedMood?.let { mood ->
+                                viewModel.logSearch()
                                 onSearch(
                                     mood,
                                     state.selectedGenre,
@@ -276,6 +277,7 @@ fun DiscoverScreen(
                         OutlinedButton(
                             onClick = {
                                 val mood = viewModel.surpriseMood()
+                                viewModel.logSearch()
                                 onSearch(
                                     mood,
                                     state.selectedGenre,

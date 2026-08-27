@@ -3,6 +3,8 @@ package com.arka.moodflix.ui.results
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.core.analytics.AnalyticsEvent
+import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.core.AppError
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaTypeFilter
@@ -41,6 +43,7 @@ data class ResultsUiState(
 @HiltViewModel
 class ResultsViewModel @Inject constructor(
     private val getRecommendations: GetRecommendationsUseCase,
+    private val analytics: AnalyticsManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -59,9 +62,6 @@ class ResultsViewModel @Inject constructor(
     val uiState: StateFlow<ResultsUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
-
-    // Only meaningful for the TMDB fallback path - see MoodQuery.page.
-    // Resets whenever a fresh (non-append) search starts.
     private var currentPage = 1
 
     init {
@@ -72,6 +72,7 @@ class ResultsViewModel @Inject constructor(
 
     fun loadMore() {
         currentPage += 1
+        analytics.log(AnalyticsEvent.LoadMoreTapped)
         search(append = true)
     }
 
@@ -119,6 +120,14 @@ class ResultsViewModel @Inject constructor(
                     } else {
                         state.movies
                     }
+                    if (!append) {
+                        analytics.log(
+                            AnalyticsEvent.SearchSucceeded(
+                                resultCount = merged.size,
+                                answeredBy = state.answeredBy
+                            )
+                        )
+                    }
                     current.copy(
                         phase = ResultsUiState.Phase.Done,
                         results = merged,
@@ -135,6 +144,7 @@ class ResultsViewModel @Inject constructor(
                     } else {
                         state.movies
                     }
+                    if (!append) analytics.log(AnalyticsEvent.SearchFellBackToTmdb)
                     current.copy(
                         phase = ResultsUiState.Phase.Done,
                         results = merged,
@@ -145,20 +155,17 @@ class ResultsViewModel @Inject constructor(
                     )
                 }
 
-                is RecommendationState.Failed -> current.copy(
-                    phase = ResultsUiState.Phase.Done,
-                    error = state.error
-                )
+                is RecommendationState.Failed -> {
+                    if (!append) analytics.log(AnalyticsEvent.SearchFailed)
+                    current.copy(
+                        phase = ResultsUiState.Phase.Done,
+                        error = state.error
+                    )
+                }
             }
         }
     }
 
-    /**
-     * The AI's "don't repeat these" instruction is a prompt-level ask, not a
-     * code-enforced guarantee - a weaker model can still re-suggest titles
-     * already on screen, which then get silently deduplicated. Surfacing that
-     * honestly beats a load-more button that appears to do nothing.
-     */
     private fun noNewResultsMessage(append: Boolean, previousSize: Int, mergedSize: Int): String? =
         if (append && mergedSize == previousSize) {
             "No new matches this time - try a different mood, genre, or rating."

@@ -3,6 +3,8 @@ package com.arka.moodflix.ui.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.core.analytics.AnalyticsEvent
+import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.core.AppError
 import com.arka.moodflix.core.AppResult
 import com.arka.moodflix.domain.model.MediaType
@@ -24,13 +26,12 @@ data class DetailUiState(
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val repository: MovieRepository,
+    private val analytics: AnalyticsManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val movieId: Int = checkNotNull(savedStateHandle["movieId"])
 
-    // TMDB movie ids and TV ids are separate spaces, so which endpoint to
-    // call must travel with the id rather than being guessed.
     private val mediaType: MediaType = MediaType.valueOf(
         savedStateHandle.get<String>("mediaType") ?: MediaType.MOVIE.name
     )
@@ -46,9 +47,29 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = DetailUiState(isLoading = true)
             _uiState.value = when (val result = repository.getMovieDetail(movieId, mediaType)) {
-                is AppResult.Success -> DetailUiState(isLoading = false, movie = result.data)
+                is AppResult.Success -> {
+                    analytics.log(
+                        AnalyticsEvent.TitleDetailOpened(
+                            tmdbId = result.data.tmdbId,
+                            title = result.data.title,
+                            mediaType = result.data.mediaType.name
+                        )
+                    )
+                    DetailUiState(isLoading = false, movie = result.data)
+                }
                 is AppResult.Failure -> DetailUiState(isLoading = false, error = result.error)
             }
+        }
+    }
+
+    fun logTrailerPlayed() {
+        _uiState.value.movie?.let { movie ->
+            analytics.log(
+                AnalyticsEvent.TrailerPlayed(
+                    tmdbId = movie.tmdbId,
+                    title = movie.title
+                )
+            )
         }
     }
 }

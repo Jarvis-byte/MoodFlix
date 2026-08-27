@@ -2,6 +2,8 @@ package com.arka.moodflix.ui.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.core.analytics.AnalyticsEvent
+import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.core.AppResult
 import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.domain.model.Genre
@@ -22,11 +24,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * Holds only what the user has picked. Actually running the search now
- * happens on the results screen, which owns its own loading/error state -
- * that way navigating back to Discover doesn't carry stale results with it.
- */
 data class DiscoverUiState(
     val selectedMood: Mood? = null,
     val selectedGenre: Genre = Genre.ANY,
@@ -53,35 +50,47 @@ sealed interface DiscoverEvent {
 class DiscoverViewModel @Inject constructor(
     observeProviders: ObserveConnectedProvidersUseCase,
     private val getOttProviders: GetOttProvidersUseCase,
-    private val prefs: UserPreferences
+    private val prefs: UserPreferences,
+    private val analytics: AnalyticsManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DiscoverUiState())
     val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
 
-    /** Drives the "connect a provider first" hint - search still works without one. */
     val hasAnyProvider: StateFlow<Boolean> = observeProviders()
         .map { list -> list.any { it.hasKey } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    /** Whether the Discover screen's one-time intro tooltip still needs to be shown. */
     val shouldShowIntro: StateFlow<Boolean> = prefs.discoverIntroSeen
         .map { seen -> !seen }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     init {
         loadOttProviders()
+        analytics.log(AnalyticsEvent.DiscoverScreenOpened)
     }
 
     fun markIntroSeen() {
         viewModelScope.launch { prefs.markDiscoverIntroSeen() }
     }
 
+    fun logSearch() {
+        val s = _uiState.value
+        analytics.log(
+            AnalyticsEvent.SearchStarted(
+                mood = s.selectedMood ?: return,
+                genre = s.selectedGenre,
+                mediaFilter = s.mediaFilter,
+                minRating = s.minRating,
+                ottCount = s.selectedProviderIds.size,
+                hasFreeText = s.freeText.isNotBlank()
+            )
+        )
+    }
+
     private fun loadOttProviders() {
         viewModelScope.launch {
             val region = prefs.watchCountry.first()
-            // Fails silently: the OTT filter is a nice-to-have, not core
-            // functionality, so a TMDB hiccup here shouldn't block search.
             when (val result = getOttProviders(region)) {
                 is AppResult.Success ->
                     _uiState.update { it.copy(availableProviders = result.data) }
@@ -121,7 +130,6 @@ class DiscoverViewModel @Inject constructor(
         }
     }
 
-    /** Picks a random mood and returns it so the caller can navigate immediately. */
     fun surpriseMood(): Mood {
         val mood = Mood.entries.random()
         _uiState.update { it.copy(selectedMood = mood) }

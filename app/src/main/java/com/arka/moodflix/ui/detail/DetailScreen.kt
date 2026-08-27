@@ -126,7 +126,10 @@ fun DetailScreen(
                                     .size(58.dp)
                                     .clip(RoundedCornerShape(50))
                                     .background(MaterialTheme.colorScheme.primary)
-                                    .clickable { onPlayTrailer(trailer.youtubeKey) },
+                                    .clickable {
+                                        viewModel.logTrailerPlayed()
+                                        onPlayTrailer(trailer.youtubeKey)
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(

@@ -2,6 +2,8 @@ package com.arka.moodflix.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.core.analytics.AnalyticsEvent
+import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.domain.model.AiProviderType
 import com.arka.moodflix.domain.model.ConnectedProvider
@@ -35,7 +37,8 @@ sealed interface SettingsEvent {
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val keyRepository: AiKeyRepository,
-    private val prefs: UserPreferences
+    private val prefs: UserPreferences,
+    private val analytics: AnalyticsManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -65,6 +68,7 @@ class SettingsViewModel @Inject constructor(
 
                 viewModelScope.launch {
                     keyRepository.saveKey(type, key)
+                    analytics.log(AnalyticsEvent.AiProviderConnected(type.displayName))
                     _uiState.update {
                         it.copy(
                             editingProvider = null,
@@ -77,6 +81,7 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsEvent.RemoveKey -> viewModelScope.launch {
                 keyRepository.removeKey(event.type)
+                analytics.log(AnalyticsEvent.AiProviderRemoved(event.type.displayName))
                 _uiState.update { it.copy(message = "${event.type.displayName} removed") }
             }
 

@@ -8,6 +8,11 @@ build/
 
 # Local configuration
 local.properties
+keystore.properties
+
+# Signing keys - never commit these
+*.jks
+*.keystore
 
 # Android build outputs
 app/build/
