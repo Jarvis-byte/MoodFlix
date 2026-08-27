@@ -3,6 +3,7 @@ package com.arka.moodflix.domain.repository
 import com.arka.moodflix.core.AppResult
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.MoodQuery
+import com.arka.moodflix.domain.model.OttProvider
 import kotlinx.coroutines.flow.Flow
 
 interface MovieRepository {
@@ -14,6 +15,9 @@ interface MovieRepository {
     fun recommend(query: MoodQuery): Flow<RecommendationState>
 
     suspend fun getMovieDetail(tmdbId: Int): AppResult<Movie>
+
+    /** Live provider catalog for a region, sorted by local popularity. */
+    suspend fun getOttProviders(region: String): AppResult<List<OttProvider>>
 }
 
 sealed interface RecommendationState {

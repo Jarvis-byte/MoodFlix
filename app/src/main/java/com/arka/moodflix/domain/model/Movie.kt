@@ -31,6 +31,7 @@ data class Trailer(
 }
 
 data class WatchProvider(
+    val providerId: Int,
     val name: String,
     val logoUrl: String?,
     val type: ProviderType

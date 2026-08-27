@@ -24,21 +24,36 @@ object Routes {
     const val DISCOVER = "discover"
     const val SETTINGS = "settings"
     const val DETAIL = "detail/{movieId}"
-    const val RESULTS = "results/{mood}/{genre}/{minRating}/{freeText}"
+    const val RESULTS = "results/{mood}/{genre}/{minRating}/{freeText}/{providers}"
 
     // A blank freeText segment breaks route matching (double slash), so an
     // empty string is encoded as this sentinel instead of Uri.encode("").
     private const val BLANK_TEXT = "_blank_"
+    private const val NO_PROVIDERS = "none"
 
     fun detail(movieId: Int) = "detail/$movieId"
 
-    fun results(mood: Mood, genre: Genre, minRating: Float, freeText: String): String {
+    fun results(
+        mood: Mood,
+        genre: Genre,
+        minRating: Float,
+        freeText: String,
+        providerIds: List<Int>
+    ): String {
         val encodedText = if (freeText.isBlank()) BLANK_TEXT else Uri.encode(freeText)
-        return "results/${mood.name}/${genre.name}/$minRating/$encodedText"
+        val providerSegment = if (providerIds.isEmpty()) {
+            NO_PROVIDERS
+        } else {
+            providerIds.joinToString(",")
+        }
+        return "results/${mood.name}/${genre.name}/$minRating/$encodedText/$providerSegment"
     }
 
     fun decodeFreeText(raw: String): String =
         if (raw == BLANK_TEXT) "" else Uri.decode(raw)
+
+    fun decodeProviderIds(raw: String): List<Int> =
+        if (raw == NO_PROVIDERS) emptyList() else raw.split(",").mapNotNull { it.toIntOrNull() }
 }
 
 @Composable
@@ -62,8 +77,10 @@ fun MoodFlixNavHost(
         composable(Routes.DISCOVER) {
             DiscoverScreen(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                onSearch = { mood, genre, minRating, freeText ->
-                    navController.navigate(Routes.results(mood, genre, minRating, freeText))
+                onSearch = { mood, genre, minRating, freeText, providerIds ->
+                    navController.navigate(
+                        Routes.results(mood, genre, minRating, freeText, providerIds)
+                    )
                 }
             )
         }
@@ -81,7 +98,8 @@ fun MoodFlixNavHost(
                 navArgument("mood") { type = NavType.StringType },
                 navArgument("genre") { type = NavType.StringType },
                 navArgument("minRating") { type = NavType.FloatType },
-                navArgument("freeText") { type = NavType.StringType }
+                navArgument("freeText") { type = NavType.StringType },
+                navArgument("providers") { type = NavType.StringType }
             )
         ) {
             ResultsScreen(

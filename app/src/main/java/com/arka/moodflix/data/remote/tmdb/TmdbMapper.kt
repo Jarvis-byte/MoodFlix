@@ -20,15 +20,15 @@ fun TmdbMovieDetailDto.toDomain(
 
     val providers = buildList {
         country?.flatrate?.forEach {
-            add(WatchProvider(it.providerName, logoUrl(it.logoPath), ProviderType.STREAM))
+            add(WatchProvider(it.providerId, it.providerName, logoUrl(it.logoPath), ProviderType.STREAM))
         }
         country?.rent?.forEach {
-            add(WatchProvider(it.providerName, logoUrl(it.logoPath), ProviderType.RENT))
+            add(WatchProvider(it.providerId, it.providerName, logoUrl(it.logoPath), ProviderType.RENT))
         }
         country?.buy?.forEach {
-            add(WatchProvider(it.providerName, logoUrl(it.logoPath), ProviderType.BUY))
+            add(WatchProvider(it.providerId, it.providerName, logoUrl(it.logoPath), ProviderType.BUY))
         }
-    }.distinctBy { it.name to it.type }
+    }.distinctBy { it.providerId to it.type }
 
     val trailer = videos?.results
         ?.filter { it.site.equals("YouTube", true) }
@@ -59,3 +59,10 @@ fun TmdbMovieDetailDto.toDomain(
 
 fun TmdbMovieDto.genreLabels(): List<String> =
     genreIds.mapNotNull { Genre.fromTmdbId(it)?.label }
+
+fun TmdbProviderEntryDto.toDomain(): com.arka.moodflix.domain.model.OttProvider =
+    com.arka.moodflix.domain.model.OttProvider(
+        id = providerId,
+        name = providerName,
+        logoUrl = logoUrl(logoPath)
+    )

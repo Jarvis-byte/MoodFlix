@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arka.moodflix.core.AppError
 import com.arka.moodflix.ui.components.MovieCard
+import com.arka.moodflix.ui.components.ReelLoadingAnimation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,11 +53,20 @@ fun ResultsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "${state.mood.label} picks",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    Column {
+                        Text(
+                            text = "${state.mood.label} picks",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        if (state.selectedProviderCount > 0) {
+                            Text(
+                                text = "Filtered to ${state.selectedProviderCount} platform(s)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -145,19 +155,10 @@ fun ResultsScreen(
 
 @Composable
 private fun LoadingState(label: String) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp)
-        )
-    }
+    ReelLoadingAnimation(
+        statusLabel = label,
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable

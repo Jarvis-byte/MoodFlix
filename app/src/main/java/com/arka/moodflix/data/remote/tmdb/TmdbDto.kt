@@ -71,3 +71,19 @@ data class TmdbProviderDto(
     @SerialName("provider_name") val providerName: String,
     @SerialName("logo_path") val logoPath: String? = null
 )
+
+/** Response from GET /watch/providers/movie - the full catalog for a region. */
+@Serializable
+data class TmdbProviderListResponse(
+    val results: List<TmdbProviderEntryDto> = emptyList()
+)
+
+@Serializable
+data class TmdbProviderEntryDto(
+    @SerialName("provider_id") val providerId: Int,
+    @SerialName("provider_name") val providerName: String,
+    @SerialName("logo_path") val logoPath: String? = null,
+    // Lower number = more prominent in that region. Per-region, unlike the
+    // deprecated global display_priority field.
+    @SerialName("display_priorities") val displayPriorities: Map<String, Int> = emptyMap()
+)

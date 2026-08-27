@@ -2,17 +2,23 @@ package com.arka.moodflix.ui.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.core.AppResult
+import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.Mood
+import com.arka.moodflix.domain.model.OttProvider
+import com.arka.moodflix.domain.usecase.GetOttProvidersUseCase
 import com.arka.moodflix.domain.usecase.ObserveConnectedProvidersUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -24,7 +30,9 @@ data class DiscoverUiState(
     val selectedMood: Mood? = null,
     val selectedGenre: Genre = Genre.ANY,
     val minRating: Float = 7.0f,
-    val freeText: String = ""
+    val freeText: String = "",
+    val availableProviders: List<OttProvider> = emptyList(),
+    val selectedProviderIds: Set<Int> = emptySet()
 ) {
     val canSearch: Boolean get() = selectedMood != null
 }
@@ -34,11 +42,15 @@ sealed interface DiscoverEvent {
     data class GenreSelected(val genre: Genre) : DiscoverEvent
     data class RatingChanged(val rating: Float) : DiscoverEvent
     data class FreeTextChanged(val text: String) : DiscoverEvent
+    data class ProviderToggled(val id: Int) : DiscoverEvent
+    data object ClearProviders : DiscoverEvent
 }
 
 @HiltViewModel
 class DiscoverViewModel @Inject constructor(
-    observeProviders: ObserveConnectedProvidersUseCase
+    observeProviders: ObserveConnectedProvidersUseCase,
+    private val getOttProviders: GetOttProvidersUseCase,
+    private val prefs: UserPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DiscoverUiState())
@@ -48,6 +60,23 @@ class DiscoverViewModel @Inject constructor(
     val hasAnyProvider: StateFlow<Boolean> = observeProviders()
         .map { list -> list.any { it.hasKey } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    init {
+        loadOttProviders()
+    }
+
+    private fun loadOttProviders() {
+        viewModelScope.launch {
+            val region = prefs.watchCountry.first()
+            // Fails silently: the OTT filter is a nice-to-have, not core
+            // functionality, so a TMDB hiccup here shouldn't block search.
+            when (val result = getOttProviders(region)) {
+                is AppResult.Success ->
+                    _uiState.update { it.copy(availableProviders = result.data) }
+                is AppResult.Failure -> Unit
+            }
+        }
+    }
 
     fun onEvent(event: DiscoverEvent) {
         when (event) {
@@ -62,6 +91,18 @@ class DiscoverViewModel @Inject constructor(
 
             is DiscoverEvent.FreeTextChanged ->
                 _uiState.update { it.copy(freeText = event.text) }
+
+            is DiscoverEvent.ProviderToggled -> _uiState.update { state ->
+                val updated = if (event.id in state.selectedProviderIds) {
+                    state.selectedProviderIds - event.id
+                } else {
+                    state.selectedProviderIds + event.id
+                }
+                state.copy(selectedProviderIds = updated)
+            }
+
+            DiscoverEvent.ClearProviders ->
+                _uiState.update { it.copy(selectedProviderIds = emptySet()) }
         }
     }
 

@@ -42,13 +42,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.ui.components.MoodChip
+import com.arka.moodflix.ui.components.ProviderChip
 import com.arka.moodflix.ui.components.RatingSlider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverScreen(
     onOpenSettings: () -> Unit,
-    onSearch: (Mood, Genre, Float, String) -> Unit,
+    onSearch: (Mood, Genre, Float, String, List<Int>) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -128,6 +129,42 @@ fun DiscoverScreen(
                 }
             }
 
+            if (state.availableProviders.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Where do you watch?",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            MoodChip(
+                                label = "All platforms",
+                                selected = state.selectedProviderIds.isEmpty(),
+                                onClick = { viewModel.onEvent(DiscoverEvent.ClearProviders) }
+                            )
+                        }
+                        items(state.availableProviders, key = { it.id }) { provider ->
+                            ProviderChip(
+                                name = provider.name,
+                                logoUrl = provider.logoUrl,
+                                selected = provider.id in state.selectedProviderIds,
+                                onClick = { viewModel.onEvent(DiscoverEvent.ProviderToggled(provider.id)) }
+                            )
+                        }
+                    }
+                    if (state.selectedProviderIds.isNotEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Only showing films on ${state.selectedProviderIds.size} selected platform(s)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
             item {
                 RatingSlider(
                     value = state.minRating,
@@ -153,7 +190,13 @@ fun DiscoverScreen(
                     Button(
                         onClick = {
                             state.selectedMood?.let { mood ->
-                                onSearch(mood, state.selectedGenre, state.minRating, state.freeText)
+                                onSearch(
+                                    mood,
+                                    state.selectedGenre,
+                                    state.minRating,
+                                    state.freeText,
+                                    state.selectedProviderIds.toList()
+                                )
                             }
                         },
                         enabled = state.canSearch,
@@ -171,7 +214,13 @@ fun DiscoverScreen(
                     OutlinedButton(
                         onClick = {
                             val mood = viewModel.surpriseMood()
-                            onSearch(mood, state.selectedGenre, state.minRating, state.freeText)
+                            onSearch(
+                                mood,
+                                state.selectedGenre,
+                                state.minRating,
+                                state.freeText,
+                                state.selectedProviderIds.toList()
+                            )
                         },
                         modifier = Modifier.height(54.dp),
                         shape = RoundedCornerShape(16.dp)

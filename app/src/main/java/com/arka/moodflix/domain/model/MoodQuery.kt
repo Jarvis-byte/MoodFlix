@@ -6,5 +6,6 @@ data class MoodQuery(
     val genre: Genre = Genre.ANY,
     val minRating: Float = 7.0f,
     val freeText: String = "",
-    val excludeTitles: List<String> = emptyList()
+    val excludeTitles: List<String> = emptyList(),
+    val selectedProviderIds: List<Int> = emptyList()
 )

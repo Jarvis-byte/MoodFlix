@@ -27,6 +27,7 @@ data class ResultsUiState(
     val results: List<Movie> = emptyList(),
     val answeredBy: String? = null,
     val usingTmdbFallback: Boolean = false,
+    val selectedProviderCount: Int = 0,
     val error: AppError? = null
 ) {
     sealed interface Phase {
@@ -45,8 +46,12 @@ class ResultsViewModel @Inject constructor(
     private val genre: Genre = Genre.valueOf(checkNotNull(savedStateHandle["genre"]))
     private val minRating: Float = checkNotNull(savedStateHandle.get<Float>("minRating"))
     private val freeText: String = Routes.decodeFreeText(checkNotNull(savedStateHandle["freeText"]))
+    private val selectedProviderIds: List<Int> =
+        Routes.decodeProviderIds(checkNotNull(savedStateHandle["providers"]))
 
-    private val _uiState = MutableStateFlow(ResultsUiState(mood = mood))
+    private val _uiState = MutableStateFlow(
+        ResultsUiState(mood = mood, selectedProviderCount = selectedProviderIds.size)
+    )
     val uiState: StateFlow<ResultsUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
@@ -67,7 +72,8 @@ class ResultsViewModel @Inject constructor(
             genre = genre,
             minRating = minRating,
             freeText = freeText,
-            excludeTitles = if (append) _uiState.value.results.map { it.title } else emptyList()
+            excludeTitles = if (append) _uiState.value.results.map { it.title } else emptyList(),
+            selectedProviderIds = selectedProviderIds
         )
 
         searchJob = getRecommendations(query)

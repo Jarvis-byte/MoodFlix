@@ -30,6 +30,15 @@ interface TmdbApi {
         @Query("vote_average.gte") minRating: Float? = null,
         @Query("vote_count.gte") minVotes: Int = 300,
         @Query("sort_by") sortBy: String = "popularity.desc",
-        @Query("include_adult") includeAdult: Boolean = false
+        @Query("include_adult") includeAdult: Boolean = false,
+        // Pipe-separated = OR. Must be paired with watch_region or TMDB ignores it.
+        @Query("with_watch_providers") withWatchProviders: String? = null,
+        @Query("watch_region") watchRegion: String? = null
     ): TmdbSearchResponse
+
+    /** Full provider catalog for a region, used to populate the OTT picker. */
+    @GET("watch/providers/movie")
+    suspend fun getWatchProviders(
+        @Query("watch_region") watchRegion: String
+    ): TmdbProviderListResponse
 }
