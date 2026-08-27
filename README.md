@@ -10,13 +10,13 @@
 
 > 📁 Add your screenshots to a `screenshots/` folder in the root of this repo, then the images below will render automatically.
 
-| Discover | Results | Detail |
-|----------|---------|--------|
-| ![Discover screen](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/discover.png) | ![Results screen](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/results.png) | ![Detail screen](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/detail.png) |
+| Discover | Loading | Results                                                                                                 | Detail |  
+|----------|---------------------------------------------------------------------------------------------------------|--------|
+| ![Discover screen](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141117.png) | ![Loading](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141129.png) | ![Results screen](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141139.png) | ![Detail screen](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/detail.png) |
 
-| Settings | Loading animation | OTT filter |
+| Settings |
 |----------|------------------|------------|
-| ![Settings screen](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/settings.png) | ![Reel loading](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/loading.png) | ![OTT picker](https://raw.githubusercontent.com/YOUR_USERNAME/MoodFlix/main/screenshots/ott_filter.png) |
+| ![Settings screen](https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_141150.png) | 
 
 > **To add screenshots:** take them on your device → transfer to your Mac → create a `screenshots/` folder in the project root → commit and push. Replace `YOUR_USERNAME` with your GitHub username above.
 
