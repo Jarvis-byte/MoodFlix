@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Themed-icon silhouette (Android 13+); the system tints this to a single color -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,54 A30,30 0 1,0 84,54 A30,30 0 1,0 24,54 Z
+                           M46,40 L46,68 L70,54 Z
+                           M76,26 A6,6 0 1,0 88,26 A6,6 0 1,0 76,26 Z"
+        android:fillType="evenOdd" />
+</vector>

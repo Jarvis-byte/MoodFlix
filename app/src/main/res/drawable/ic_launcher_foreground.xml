@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Amber play badge -->
+    <path
+        android:fillColor="#F5B942"
+        android:pathData="M24,54 A30,30 0 1,0 84,54 A30,30 0 1,0 24,54 Z" />
+    <!-- Play triangle cutout, matches background ink to read as a hole -->
+    <path
+        android:fillColor="#0B0B10"
+        android:pathData="M46,40 L46,68 L70,54 Z" />
+    <!-- Violet mood spark accent -->
+    <path
+        android:fillColor="#9B8CFF"
+        android:pathData="M76,26 A6,6 0 1,0 88,26 A6,6 0 1,0 76,26 Z" />
+</vector>

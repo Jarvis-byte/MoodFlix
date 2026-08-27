@@ -9,6 +9,8 @@
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="false"
+        android:icon="@drawable/icon_movie_ai"
+        android:roundIcon="@drawable/icon_movie_ai"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.MoodFlix">
