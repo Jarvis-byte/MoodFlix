@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.arka.moodflix.core.AppResult
 import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.domain.model.Genre
+import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.domain.model.OttProvider
 import com.arka.moodflix.domain.usecase.GetOttProvidersUseCase
@@ -32,7 +33,8 @@ data class DiscoverUiState(
     val minRating: Float = 7.0f,
     val freeText: String = "",
     val availableProviders: List<OttProvider> = emptyList(),
-    val selectedProviderIds: Set<Int> = emptySet()
+    val selectedProviderIds: Set<Int> = emptySet(),
+    val mediaFilter: MediaTypeFilter = MediaTypeFilter.BOTH
 ) {
     val canSearch: Boolean get() = selectedMood != null
 }
@@ -44,6 +46,7 @@ sealed interface DiscoverEvent {
     data class FreeTextChanged(val text: String) : DiscoverEvent
     data class ProviderToggled(val id: Int) : DiscoverEvent
     data object ClearProviders : DiscoverEvent
+    data class MediaFilterSelected(val filter: MediaTypeFilter) : DiscoverEvent
 }
 
 @HiltViewModel
@@ -103,6 +106,9 @@ class DiscoverViewModel @Inject constructor(
 
             DiscoverEvent.ClearProviders ->
                 _uiState.update { it.copy(selectedProviderIds = emptySet()) }
+
+            is DiscoverEvent.MediaFilterSelected ->
+                _uiState.update { it.copy(mediaFilter = event.filter) }
         }
     }
 

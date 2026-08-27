@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.ProviderType
 import com.arka.moodflix.domain.model.WatchProvider
 
@@ -153,7 +154,13 @@ fun DetailScreen(
                             append(String.format("%.1f", movie.rating))
                             append(" · ")
                             append(movie.year)
-                            movie.runtimeMinutes?.let { append(" · ${it} min") }
+                            if (movie.mediaType == MediaType.SERIES) {
+                                movie.seasonCount?.let { append(" · $it season${if (it == 1) "" else "s"}") }
+                                movie.episodeCount?.let { append(" · $it episodes") }
+                                movie.runtimeMinutes?.let { append(" · ~$it min/ep") }
+                            } else {
+                                movie.runtimeMinutes?.let { append(" · $it min") }
+                            }
                             if (movie.genres.isNotEmpty()) {
                                 append(" · ${movie.genres.joinToString(", ")}")
                             }

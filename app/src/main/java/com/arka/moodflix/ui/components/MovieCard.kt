@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.ProviderType
 
@@ -118,11 +119,21 @@ fun MovieCard(
                         )
                     }
                     movie.runtimeMinutes?.let {
+                        val suffix = if (movie.mediaType == MediaType.SERIES) "m/ep" else "m"
                         Text(
-                            text = "  ·  ${it}m",
+                            text = "  ·  ${it}$suffix",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                    if (movie.mediaType == MediaType.SERIES) {
+                        movie.seasonCount?.let { seasons ->
+                            Text(
+                                text = "  ·  $seasons season${if (seasons == 1) "" else "s"}",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 

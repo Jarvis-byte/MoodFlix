@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arka.moodflix.domain.model.Genre
+import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.ui.components.MoodChip
 import com.arka.moodflix.ui.components.ProviderChip
@@ -49,7 +50,7 @@ import com.arka.moodflix.ui.components.RatingSlider
 @Composable
 fun DiscoverScreen(
     onOpenSettings: () -> Unit,
-    onSearch: (Mood, Genre, Float, String, List<Int>) -> Unit,
+    onSearch: (Mood, Genre, Float, String, List<Int>, MediaTypeFilter) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,6 +106,19 @@ fun DiscoverScreen(
             }
 
             item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MediaTypeFilter.entries.forEach { filter ->
+                        MoodChip(
+                            label = filter.label,
+                            selected = state.mediaFilter == filter,
+                            onClick = { viewModel.onEvent(DiscoverEvent.MediaFilterSelected(filter)) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            item {
                 MoodGrid(
                     selected = state.selectedMood,
                     onSelect = { viewModel.onEvent(DiscoverEvent.MoodSelected(it)) }
@@ -126,6 +140,17 @@ fun DiscoverScreen(
                             onClick = { viewModel.onEvent(DiscoverEvent.GenreSelected(genre)) }
                         )
                     }
+                }
+                if (state.mediaFilter != MediaTypeFilter.MOVIES &&
+                    state.selectedGenre.tvGenreId == null &&
+                    state.selectedGenre != Genre.ANY
+                ) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "${state.selectedGenre.label} doesn't map to a TV genre - series results won't be genre-filtered.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
@@ -157,7 +182,7 @@ fun DiscoverScreen(
                     if (state.selectedProviderIds.isNotEmpty()) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Only showing films on ${state.selectedProviderIds.size} selected platform(s)",
+                            text = "Only showing titles on ${state.selectedProviderIds.size} selected platform(s)",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -195,7 +220,8 @@ fun DiscoverScreen(
                                     state.selectedGenre,
                                     state.minRating,
                                     state.freeText,
-                                    state.selectedProviderIds.toList()
+                                    state.selectedProviderIds.toList(),
+                                    state.mediaFilter
                                 )
                             }
                         },
@@ -219,7 +245,8 @@ fun DiscoverScreen(
                                 state.selectedGenre,
                                 state.minRating,
                                 state.freeText,
-                                state.selectedProviderIds.toList()
+                                state.selectedProviderIds.toList(),
+                                state.mediaFilter
                             )
                         },
                         modifier = Modifier.height(54.dp),

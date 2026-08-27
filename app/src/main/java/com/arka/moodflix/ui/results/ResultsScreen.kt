@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arka.moodflix.core.AppError
+import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.ui.components.MovieCard
 import com.arka.moodflix.ui.components.ReelLoadingAnimation
 
@@ -42,7 +43,7 @@ import com.arka.moodflix.ui.components.ReelLoadingAnimation
 @Composable
 fun ResultsScreen(
     onBack: () -> Unit,
-    onOpenMovie: (Int) -> Unit,
+    onOpenMovie: (Int, MediaType) -> Unit,
     onPlayTrailer: (String) -> Unit,
     viewModel: ResultsViewModel = hiltViewModel()
 ) {
@@ -128,7 +129,7 @@ fun ResultsScreen(
                             ) {
                                 MovieCard(
                                     movie = movie,
-                                    onClick = { onOpenMovie(movie.tmdbId) },
+                                    onClick = { onOpenMovie(movie.tmdbId, movie.mediaType) },
                                     onPlayTrailer = { movie.trailer?.let { onPlayTrailer(it.youtubeKey) } }
                                 )
                             }

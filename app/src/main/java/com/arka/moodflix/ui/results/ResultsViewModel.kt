@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arka.moodflix.core.AppError
 import com.arka.moodflix.domain.model.Genre
+import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.domain.model.MoodQuery
 import com.arka.moodflix.domain.model.Movie
@@ -48,6 +49,8 @@ class ResultsViewModel @Inject constructor(
     private val freeText: String = Routes.decodeFreeText(checkNotNull(savedStateHandle["freeText"]))
     private val selectedProviderIds: List<Int> =
         Routes.decodeProviderIds(checkNotNull(savedStateHandle["providers"]))
+    private val mediaFilter: MediaTypeFilter =
+        MediaTypeFilter.valueOf(checkNotNull(savedStateHandle["mediaFilter"]))
 
     private val _uiState = MutableStateFlow(
         ResultsUiState(mood = mood, selectedProviderCount = selectedProviderIds.size)
@@ -73,7 +76,8 @@ class ResultsViewModel @Inject constructor(
             minRating = minRating,
             freeText = freeText,
             excludeTitles = if (append) _uiState.value.results.map { it.title } else emptyList(),
-            selectedProviderIds = selectedProviderIds
+            selectedProviderIds = selectedProviderIds,
+            mediaFilter = mediaFilter
         )
 
         searchJob = getRecommendations(query)
@@ -101,7 +105,7 @@ class ResultsViewModel @Inject constructor(
                 is RecommendationState.Enriched -> current.copy(
                     phase = ResultsUiState.Phase.Done,
                     results = if (append) {
-                        (current.results + state.movies).distinctBy { it.tmdbId }
+                        (current.results + state.movies).distinctBy { it.tmdbId to it.mediaType }
                     } else {
                         state.movies
                     },
@@ -113,7 +117,7 @@ class ResultsViewModel @Inject constructor(
                 is RecommendationState.FallbackToTmdb -> current.copy(
                     phase = ResultsUiState.Phase.Done,
                     results = if (append) {
-                        (current.results + state.movies).distinctBy { it.tmdbId }
+                        (current.results + state.movies).distinctBy { it.tmdbId to it.mediaType }
                     } else {
                         state.movies
                     },

@@ -41,4 +41,30 @@ interface TmdbApi {
     suspend fun getWatchProviders(
         @Query("watch_region") watchRegion: String
     ): TmdbProviderListResponse
+
+    // ---- TV (series) equivalents ----
+
+    @GET("search/tv")
+    suspend fun searchTv(
+        @Query("query") query: String,
+        @Query("first_air_date_year") year: String? = null,
+        @Query("include_adult") includeAdult: Boolean = false
+    ): TmdbTvSearchResponse
+
+    @GET("tv/{id}")
+    suspend fun getTvDetail(
+        @Path("id") id: Int,
+        @Query("append_to_response") append: String = "videos,watch/providers"
+    ): TmdbTvDetailDto
+
+    /** TV fallback path, mirroring discover/movie. */
+    @GET("discover/tv")
+    suspend fun discoverTv(
+        @Query("with_genres") genreId: String? = null,
+        @Query("vote_average.gte") minRating: Float? = null,
+        @Query("vote_count.gte") minVotes: Int = 300,
+        @Query("sort_by") sortBy: String = "popularity.desc",
+        @Query("with_watch_providers") withWatchProviders: String? = null,
+        @Query("watch_region") watchRegion: String? = null
+    ): TmdbTvSearchResponse
 }

@@ -9,6 +9,8 @@ import com.arka.moodflix.data.remote.tmdb.TmdbApi
 import com.arka.moodflix.data.remote.tmdb.toDomain
 import com.arka.moodflix.domain.model.AiSuggestion
 import com.arka.moodflix.domain.model.Genre
+import com.arka.moodflix.domain.model.MediaType
+import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.MoodQuery
 import com.arka.moodflix.domain.model.OttProvider
@@ -44,7 +46,7 @@ class MovieRepositoryImpl @Inject constructor(
             is AppResult.Failure -> {
                 // No provider worked (none connected, all out of quota, or all
                 // offline). Rather than a dead end, fall back to a straight
-                // TMDB discover call filtered by the same genre/rating/OTTs.
+                // TMDB discover call filtered by the same genre/rating/OTTs/media type.
                 val fallback = discoverFallback(query)
                 if (fallback.isEmpty()) {
                     emit(RecommendationState.Failed(result.error))
@@ -64,11 +66,11 @@ class MovieRepositoryImpl @Inject constructor(
         if (movies.isEmpty()) {
             // Either a fully hallucinated list, or every real match was
             // filtered out by the OTT selection. Either way, TMDB discover
-            // (which respects the same OTT filter) is a better landing spot
+            // (which respects the same filters) is a better landing spot
             // than an empty screen.
             val fallback = discoverFallback(query)
             if (fallback.isEmpty()) {
-                emit(RecommendationState.Failed(AppError.Unknown("Nothing matched on your selected platforms")))
+                emit(RecommendationState.Failed(AppError.Unknown("Nothing matched your filters")))
             } else {
                 emit(RecommendationState.FallbackToTmdb(fallback, AppError.ParseFailed()))
             }
@@ -78,45 +80,82 @@ class MovieRepositoryImpl @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     /**
-     * Pure TMDB path: no mood reasoning, just "popular, well-rated films in
-     * this genre, on these platforms." Keeps the app usable with zero AI keys
-     * connected, or when every connected provider is down.
+     * Pure TMDB path: no mood reasoning, just "popular, well-rated titles in
+     * this genre, on these platforms, of this media type." Keeps the app
+     * usable with zero AI keys connected, or when every connected provider is
+     * down. When mediaFilter is BOTH, movie and TV results are fetched in
+     * parallel and merged, sorted by rating.
      */
     private suspend fun discoverFallback(query: MoodQuery): List<Movie> = coroutineScope {
         val country = prefs.watchCountry.first()
         val providerParam = query.selectedProviderIds.takeIf { it.isNotEmpty() }
             ?.joinToString("|") // pipe = OR: any one of the selected platforms
 
-        val hits = runCatching {
-            tmdb.discover(
-                genreId = query.genre.takeIf { it != Genre.ANY }?.tmdbId?.toString(),
-                minRating = query.minRating,
-                sortBy = "vote_average.desc",
-                withWatchProviders = providerParam,
-                watchRegion = providerParam?.let { country }
-            ).results
-        }.getOrDefault(emptyList())
+        val wantMovies = query.mediaFilter != MediaTypeFilter.SERIES
+        val wantSeries = query.mediaFilter != MediaTypeFilter.MOVIES
 
-        hits.take(10)
-            .map { hit ->
-                async {
-                    runCatching {
-                        tmdb.getMovieDetail(hit.id).toDomain(
-                            moodReason = "",
-                            countryCode = country
-                        )
-                    }.getOrNull()
-                }
+        // Both branches always launch, but return an empty list immediately
+        // when that media type wasn't requested - this sidesteps a Kotlin
+        // inference issue where `if (cond) async {...} else null` fails to
+        // resolve Deferred<T> against a null branch on newer compilers, and
+        // it's simpler than juggling nullable Deferreds besides.
+        val movieHitsDeferred = async {
+            if (!wantMovies) return@async emptyList()
+            runCatching {
+                tmdb.discover(
+                    genreId = query.genre.takeIf { it != Genre.ANY }?.tmdbId?.toString(),
+                    minRating = query.minRating,
+                    sortBy = "vote_average.desc",
+                    withWatchProviders = providerParam,
+                    watchRegion = providerParam?.let { country }
+                ).results.map { it.id }
+            }.getOrDefault(emptyList())
+        }
+
+        val seriesHitsDeferred = async {
+            if (!wantSeries) return@async emptyList()
+            runCatching {
+                tmdb.discoverTv(
+                    genreId = query.genre.takeIf { it != Genre.ANY }?.tvGenreId?.toString(),
+                    minRating = query.minRating,
+                    sortBy = "vote_average.desc",
+                    withWatchProviders = providerParam,
+                    watchRegion = providerParam?.let { country }
+                ).results.map { it.id }
+            }.getOrDefault(emptyList())
+        }
+
+        // Split the take(10) budget between the two media types when both are
+        // wanted, so one type doesn't crowd out the other.
+        val perTypeLimit = if (wantMovies && wantSeries) 5 else 10
+
+        val movieDetails = movieHitsDeferred.await().take(perTypeLimit).map { id ->
+            async {
+                runCatching {
+                    tmdb.getMovieDetail(id).toDomain(moodReason = "", countryCode = country)
+                }.getOrNull()
             }
+        }
+
+        val seriesDetails = seriesHitsDeferred.await().take(perTypeLimit).map { id ->
+            async {
+                runCatching {
+                    tmdb.getTvDetail(id).toDomain(moodReason = "", countryCode = country)
+                }.getOrNull()
+            }
+        }
+
+        (movieDetails + seriesDetails)
             .mapNotNull { it.await() }
-            .distinctBy { it.tmdbId }
+            .sortedByDescending { it.rating }
+            .distinctBy { it.tmdbId to it.mediaType }
     }
 
     /**
      * Resolves every AI title against TMDB in parallel, then applies the
      * rating floor and the OTT filter. Titles that don't resolve, or don't
      * clear the bar, are dropped silently - that's the safety net for the
-     * occasional hallucinated film, and the honest behaviour for "only show
+     * occasional hallucinated title, and the honest behaviour for "only show
      * me what's on my platforms."
      */
     private suspend fun enrich(
@@ -127,19 +166,7 @@ class MovieRepositoryImpl @Inject constructor(
     ): List<Movie> = coroutineScope {
         suggestions
             .map { suggestion ->
-                async {
-                    runCatching {
-                        val hit = tmdb.searchMovie(
-                            query = suggestion.title,
-                            year = suggestion.year.takeIf { it.length == 4 }
-                        ).results.firstOrNull() ?: return@runCatching null
-
-                        tmdb.getMovieDetail(hit.id).toDomain(
-                            moodReason = suggestion.reason,
-                            countryCode = country
-                        )
-                    }.getOrNull()
-                }
+                async { resolveSuggestion(suggestion, country) }
             }
             .mapNotNull { it.await() }
             // The model is asked for a quality bar but cannot enforce it, so we do.
@@ -148,14 +175,66 @@ class MovieRepositoryImpl @Inject constructor(
                 selectedProviderIds.isEmpty() ||
                         movie.watchProviders.any { it.providerId in selectedProviderIds }
             }
-            .distinctBy { it.tmdbId }
+            .distinctBy { it.tmdbId to it.mediaType }
     }
 
-    override suspend fun getMovieDetail(tmdbId: Int): AppResult<Movie> = try {
+    /**
+     * Tries the AI's declared type first (movie or series), then falls back
+     * to the other TMDB endpoint if that search comes up empty - the AI's
+     * classification is usually right but not guaranteed, and this costs one
+     * extra call only on the rare miss.
+     */
+    private suspend fun resolveSuggestion(suggestion: AiSuggestion, country: String): Movie? {
+        val primary = if (suggestion.mediaType == MediaType.SERIES) {
+            resolveAsSeries(suggestion, country)
+        } else {
+            resolveAsMovie(suggestion, country)
+        }
+        if (primary != null) return primary
+
+        return if (suggestion.mediaType == MediaType.SERIES) {
+            resolveAsMovie(suggestion, country)
+        } else {
+            resolveAsSeries(suggestion, country)
+        }
+    }
+
+    private suspend fun resolveAsMovie(suggestion: AiSuggestion, country: String): Movie? =
+        runCatching {
+            val hit = tmdb.searchMovie(
+                query = suggestion.title,
+                year = suggestion.year.takeIf { it.length == 4 }
+            ).results.firstOrNull() ?: return null
+
+            tmdb.getMovieDetail(hit.id).toDomain(
+                moodReason = suggestion.reason,
+                countryCode = country
+            )
+        }.getOrNull()
+
+    private suspend fun resolveAsSeries(suggestion: AiSuggestion, country: String): Movie? =
+        runCatching {
+            val hit = tmdb.searchTv(
+                query = suggestion.title,
+                year = suggestion.year.takeIf { it.length == 4 }
+            ).results.firstOrNull() ?: return null
+
+            tmdb.getTvDetail(hit.id).toDomain(
+                moodReason = suggestion.reason,
+                countryCode = country
+            )
+        }.getOrNull()
+
+    override suspend fun getMovieDetail(tmdbId: Int, mediaType: MediaType): AppResult<Movie> = try {
         val country = prefs.watchCountry.first()
-        AppResult.Success(tmdb.getMovieDetail(tmdbId).toDomain("", country))
+        val movie = if (mediaType == MediaType.SERIES) {
+            tmdb.getTvDetail(tmdbId).toDomain("", country)
+        } else {
+            tmdb.getMovieDetail(tmdbId).toDomain("", country)
+        }
+        AppResult.Success(movie)
     } catch (e: Exception) {
-        AppResult.Failure(AppError.Unknown(e.message ?: "Could not load this film"))
+        AppResult.Failure(AppError.Unknown(e.message ?: "Could not load this title"))
     }
 
     /**

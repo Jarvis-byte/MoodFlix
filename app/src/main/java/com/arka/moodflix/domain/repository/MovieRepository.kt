@@ -1,6 +1,7 @@
 package com.arka.moodflix.domain.repository
 
 import com.arka.moodflix.core.AppResult
+import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.MoodQuery
 import com.arka.moodflix.domain.model.OttProvider
@@ -14,7 +15,11 @@ interface MovieRepository {
      */
     fun recommend(query: MoodQuery): Flow<RecommendationState>
 
-    suspend fun getMovieDetail(tmdbId: Int): AppResult<Movie>
+    /**
+     * [mediaType] is required because TMDB movie ids and TV ids are separate
+     * spaces - the same numeric id can point to two unrelated titles.
+     */
+    suspend fun getMovieDetail(tmdbId: Int, mediaType: MediaType): AppResult<Movie>
 
     /** Live provider catalog for a region, sorted by local popularity. */
     suspend fun getOttProviders(region: String): AppResult<List<OttProvider>>

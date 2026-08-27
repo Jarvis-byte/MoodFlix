@@ -87,3 +87,43 @@ data class TmdbProviderEntryDto(
     // deprecated global display_priority field.
     @SerialName("display_priorities") val displayPriorities: Map<String, Int> = emptyMap()
 )
+
+// ---- TV (series) DTOs. Field names differ from movies: name/first_air_date
+// instead of title/release_date, and no single runtime - episode_run_time is
+// a list because it can vary by season. ----
+
+@Serializable
+data class TmdbTvSearchResponse(
+    val results: List<TmdbTvDto> = emptyList()
+)
+
+@Serializable
+data class TmdbTvDto(
+    val id: Int,
+    val name: String = "",
+    @SerialName("first_air_date") val firstAirDate: String? = null,
+    val overview: String = "",
+    @SerialName("poster_path") val posterPath: String? = null,
+    @SerialName("backdrop_path") val backdropPath: String? = null,
+    @SerialName("vote_average") val voteAverage: Float = 0f,
+    @SerialName("vote_count") val voteCount: Int = 0,
+    @SerialName("genre_ids") val genreIds: List<Int> = emptyList()
+)
+
+@Serializable
+data class TmdbTvDetailDto(
+    val id: Int,
+    val name: String = "",
+    @SerialName("first_air_date") val firstAirDate: String? = null,
+    val overview: String = "",
+    @SerialName("poster_path") val posterPath: String? = null,
+    @SerialName("backdrop_path") val backdropPath: String? = null,
+    @SerialName("vote_average") val voteAverage: Float = 0f,
+    @SerialName("vote_count") val voteCount: Int = 0,
+    @SerialName("episode_run_time") val episodeRunTime: List<Int> = emptyList(),
+    @SerialName("number_of_seasons") val numberOfSeasons: Int? = null,
+    @SerialName("number_of_episodes") val numberOfEpisodes: Int? = null,
+    val genres: List<TmdbGenreDto> = emptyList(),
+    val videos: TmdbVideosDto? = null,
+    @SerialName("watch/providers") val watchProviders: TmdbWatchProvidersDto? = null
+)

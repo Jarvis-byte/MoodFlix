@@ -14,6 +14,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.arka.moodflix.domain.model.Genre
+import com.arka.moodflix.domain.model.MediaType
+import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.ui.detail.DetailScreen
 import com.arka.moodflix.ui.discover.DiscoverScreen
@@ -23,22 +25,23 @@ import com.arka.moodflix.ui.settings.SettingsScreen
 object Routes {
     const val DISCOVER = "discover"
     const val SETTINGS = "settings"
-    const val DETAIL = "detail/{movieId}"
-    const val RESULTS = "results/{mood}/{genre}/{minRating}/{freeText}/{providers}"
+    const val DETAIL = "detail/{movieId}/{mediaType}"
+    const val RESULTS = "results/{mood}/{genre}/{minRating}/{freeText}/{providers}/{mediaFilter}"
 
     // A blank freeText segment breaks route matching (double slash), so an
     // empty string is encoded as this sentinel instead of Uri.encode("").
     private const val BLANK_TEXT = "_blank_"
     private const val NO_PROVIDERS = "none"
 
-    fun detail(movieId: Int) = "detail/$movieId"
+    fun detail(movieId: Int, mediaType: MediaType) = "detail/$movieId/${mediaType.name}"
 
     fun results(
         mood: Mood,
         genre: Genre,
         minRating: Float,
         freeText: String,
-        providerIds: List<Int>
+        providerIds: List<Int>,
+        mediaFilter: MediaTypeFilter
     ): String {
         val encodedText = if (freeText.isBlank()) BLANK_TEXT else Uri.encode(freeText)
         val providerSegment = if (providerIds.isEmpty()) {
@@ -46,7 +49,8 @@ object Routes {
         } else {
             providerIds.joinToString(",")
         }
-        return "results/${mood.name}/${genre.name}/$minRating/$encodedText/$providerSegment"
+        return "results/${mood.name}/${genre.name}/$minRating/$encodedText/" +
+                "$providerSegment/${mediaFilter.name}"
     }
 
     fun decodeFreeText(raw: String): String =
@@ -77,9 +81,9 @@ fun MoodFlixNavHost(
         composable(Routes.DISCOVER) {
             DiscoverScreen(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                onSearch = { mood, genre, minRating, freeText, providerIds ->
+                onSearch = { mood, genre, minRating, freeText, providerIds, mediaFilter ->
                     navController.navigate(
-                        Routes.results(mood, genre, minRating, freeText, providerIds)
+                        Routes.results(mood, genre, minRating, freeText, providerIds, mediaFilter)
                     )
                 }
             )
@@ -99,19 +103,25 @@ fun MoodFlixNavHost(
                 navArgument("genre") { type = NavType.StringType },
                 navArgument("minRating") { type = NavType.FloatType },
                 navArgument("freeText") { type = NavType.StringType },
-                navArgument("providers") { type = NavType.StringType }
+                navArgument("providers") { type = NavType.StringType },
+                navArgument("mediaFilter") { type = NavType.StringType }
             )
         ) {
             ResultsScreen(
                 onBack = { navController.popBackStack() },
-                onOpenMovie = { id -> navController.navigate(Routes.detail(id)) },
+                onOpenMovie = { id, mediaType ->
+                    navController.navigate(Routes.detail(id, mediaType))
+                },
                 onPlayTrailer = { key -> onOpenUrl("https://www.youtube.com/watch?v=$key") }
             )
         }
 
         composable(
             route = Routes.DETAIL,
-            arguments = listOf(navArgument("movieId") { type = NavType.IntType })
+            arguments = listOf(
+                navArgument("movieId") { type = NavType.IntType },
+                navArgument("mediaType") { type = NavType.StringType }
+            )
         ) {
             DetailScreen(
                 onBack = { navController.popBackStack() },

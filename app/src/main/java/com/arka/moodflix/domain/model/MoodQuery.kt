@@ -7,5 +7,6 @@ data class MoodQuery(
     val minRating: Float = 7.0f,
     val freeText: String = "",
     val excludeTitles: List<String> = emptyList(),
-    val selectedProviderIds: List<Int> = emptyList()
+    val selectedProviderIds: List<Int> = emptyList(),
+    val mediaFilter: MediaTypeFilter = MediaTypeFilter.BOTH
 )
