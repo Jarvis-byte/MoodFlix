@@ -11,10 +11,10 @@ ChatGPT, or Claude. The app costs ₹0 to run. No backend. No ads. No subscripti
 
 <p align="center">
    <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141117.png" alt="Discover" width="220"/>
+   <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141150.png" alt="Settings" width="220"/>
    <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141129.png" alt="Loading" width="220"/>
    <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141139.png" alt="Results" width="220"/>
    <img src="https://github.com/Jarvis-byte/MoodFlix/blob/main/Screenshot_20260827_142157.png" alt="Detail screen" width="220"/>
-   <img src="https://raw.githubusercontent.com/Jarvis-byte/MoodFlix/main/Screenshot_20260827_141150.png" alt="Settings" width="220"/>
 </p>
 
 ---
