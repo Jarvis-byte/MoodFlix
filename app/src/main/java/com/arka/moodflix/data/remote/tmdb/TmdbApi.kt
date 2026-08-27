@@ -33,7 +33,8 @@ interface TmdbApi {
         @Query("include_adult") includeAdult: Boolean = false,
         // Pipe-separated = OR. Must be paired with watch_region or TMDB ignores it.
         @Query("with_watch_providers") withWatchProviders: String? = null,
-        @Query("watch_region") watchRegion: String? = null
+        @Query("watch_region") watchRegion: String? = null,
+        @Query("page") page: Int = 1
     ): TmdbSearchResponse
 
     /** Full provider catalog for a region, used to populate the OTT picker. */
@@ -65,6 +66,7 @@ interface TmdbApi {
         @Query("vote_count.gte") minVotes: Int = 300,
         @Query("sort_by") sortBy: String = "popularity.desc",
         @Query("with_watch_providers") withWatchProviders: String? = null,
-        @Query("watch_region") watchRegion: String? = null
+        @Query("watch_region") watchRegion: String? = null,
+        @Query("page") page: Int = 1
     ): TmdbTvSearchResponse
 }

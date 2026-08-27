@@ -107,7 +107,8 @@ class MovieRepositoryImpl @Inject constructor(
                     minRating = query.minRating,
                     sortBy = "vote_average.desc",
                     withWatchProviders = providerParam,
-                    watchRegion = providerParam?.let { country }
+                    watchRegion = providerParam?.let { country },
+                    page = query.page
                 ).results.map { it.id }
             }.getOrDefault(emptyList())
         }
@@ -120,7 +121,8 @@ class MovieRepositoryImpl @Inject constructor(
                     minRating = query.minRating,
                     sortBy = "vote_average.desc",
                     withWatchProviders = providerParam,
-                    watchRegion = providerParam?.let { country }
+                    watchRegion = providerParam?.let { country },
+                    page = query.page
                 ).results.map { it.id }
             }.getOrDefault(emptyList())
         }

@@ -8,5 +8,9 @@ data class MoodQuery(
     val freeText: String = "",
     val excludeTitles: List<String> = emptyList(),
     val selectedProviderIds: List<Int> = emptyList(),
-    val mediaFilter: MediaTypeFilter = MediaTypeFilter.BOTH
+    val mediaFilter: MediaTypeFilter = MediaTypeFilter.BOTH,
+    // Only consulted by the TMDB-only fallback path. Each "load more" tap
+    // increments this so a rate-limited or keyless session pages through
+    // TMDB's ranked list instead of re-fetching the identical page 1 forever.
+    val page: Int = 1
 )

@@ -29,7 +29,8 @@ data class ResultsUiState(
     val answeredBy: String? = null,
     val usingTmdbFallback: Boolean = false,
     val selectedProviderCount: Int = 0,
-    val error: AppError? = null
+    val error: AppError? = null,
+    val message: String? = null
 ) {
     sealed interface Phase {
         data class Loading(val label: String) : Phase
@@ -59,16 +60,24 @@ class ResultsViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
+    // Only meaningful for the TMDB fallback path - see MoodQuery.page.
+    // Resets whenever a fresh (non-append) search starts.
+    private var currentPage = 1
+
     init {
         search(append = false)
     }
 
     fun retry() = search(append = false)
 
-    fun loadMore() = search(append = true)
+    fun loadMore() {
+        currentPage += 1
+        search(append = true)
+    }
 
     private fun search(append: Boolean) {
         searchJob?.cancel()
+        if (!append) currentPage = 1
 
         val query = MoodQuery(
             mood = mood,
@@ -77,7 +86,8 @@ class ResultsViewModel @Inject constructor(
             freeText = freeText,
             excludeTitles = if (append) _uiState.value.results.map { it.title } else emptyList(),
             selectedProviderIds = selectedProviderIds,
-            mediaFilter = mediaFilter
+            mediaFilter = mediaFilter,
+            page = currentPage
         )
 
         searchJob = getRecommendations(query)
@@ -91,6 +101,7 @@ class ResultsViewModel @Inject constructor(
                 RecommendationState.AskingAi -> current.copy(
                     phase = ResultsUiState.Phase.Loading("Reading your mood"),
                     error = null,
+                    message = null,
                     usingTmdbFallback = false,
                     results = if (append) current.results else emptyList()
                 )
@@ -102,29 +113,37 @@ class ResultsViewModel @Inject constructor(
                     answeredBy = state.answeredBy
                 )
 
-                is RecommendationState.Enriched -> current.copy(
-                    phase = ResultsUiState.Phase.Done,
-                    results = if (append) {
+                is RecommendationState.Enriched -> {
+                    val merged = if (append) {
                         (current.results + state.movies).distinctBy { it.tmdbId to it.mediaType }
                     } else {
                         state.movies
-                    },
-                    answeredBy = state.answeredBy,
-                    usingTmdbFallback = false,
-                    error = null
-                )
+                    }
+                    current.copy(
+                        phase = ResultsUiState.Phase.Done,
+                        results = merged,
+                        answeredBy = state.answeredBy,
+                        usingTmdbFallback = false,
+                        error = null,
+                        message = noNewResultsMessage(append, current.results.size, merged.size)
+                    )
+                }
 
-                is RecommendationState.FallbackToTmdb -> current.copy(
-                    phase = ResultsUiState.Phase.Done,
-                    results = if (append) {
+                is RecommendationState.FallbackToTmdb -> {
+                    val merged = if (append) {
                         (current.results + state.movies).distinctBy { it.tmdbId to it.mediaType }
                     } else {
                         state.movies
-                    },
-                    answeredBy = null,
-                    usingTmdbFallback = true,
-                    error = state.reason
-                )
+                    }
+                    current.copy(
+                        phase = ResultsUiState.Phase.Done,
+                        results = merged,
+                        answeredBy = null,
+                        usingTmdbFallback = true,
+                        error = state.reason,
+                        message = noNewResultsMessage(append, current.results.size, merged.size)
+                    )
+                }
 
                 is RecommendationState.Failed -> current.copy(
                     phase = ResultsUiState.Phase.Done,
@@ -132,5 +151,22 @@ class ResultsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * The AI's "don't repeat these" instruction is a prompt-level ask, not a
+     * code-enforced guarantee - a weaker model can still re-suggest titles
+     * already on screen, which then get silently deduplicated. Surfacing that
+     * honestly beats a load-more button that appears to do nothing.
+     */
+    private fun noNewResultsMessage(append: Boolean, previousSize: Int, mergedSize: Int): String? =
+        if (append && mergedSize == previousSize) {
+            "No new matches this time - try a different mood, genre, or rating."
+        } else {
+            null
+        }
+
+    fun dismissMessage() {
+        _uiState.update { it.copy(message = null) }
     }
 }
