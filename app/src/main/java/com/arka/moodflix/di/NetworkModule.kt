@@ -2,6 +2,7 @@ package com.arka.moodflix.di
 
 import com.arka.moodflix.BuildConfig
 import com.arka.moodflix.data.remote.tmdb.TmdbApi
+import com.arka.moodflix.domain.repository.TmdbKeyProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,5 +48,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideTmdbApi(client: HttpClient): TmdbApi = TmdbApi(client, BuildConfig.TMDB_API_KEY)
+    fun provideTmdbApi(client: HttpClient, keyProvider: TmdbKeyProvider): TmdbApi =
+        TmdbApi(client, keyProvider)
 }

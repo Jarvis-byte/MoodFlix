@@ -1,5 +1,6 @@
 package com.arka.moodflix.data.remote.tmdb
 
+import com.arka.moodflix.domain.repository.TmdbKeyProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -9,13 +10,15 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.path
 
 /**
- * [apiKey] is supplied by each platform's own build config (BuildConfig on
- * Android, an Xcode build setting on iOS) rather than baked into this shared
- * module, so secret management stays platform-owned.
+ * [keyProvider] is asked for the key on every call rather than once at
+ * construction time, since on Android it comes from Firebase Remote Config
+ * and can change without an app restart (e.g. once it's fetched right after
+ * login). Each request function pulls the key itself, because Ktor's
+ * defaultRequest block isn't a suspend context.
  */
 class TmdbApi(
     engine: HttpClient,
-    private val apiKey: String
+    private val keyProvider: TmdbKeyProvider
 ) {
     private val client = engine.config {
         defaultRequest {
@@ -23,7 +26,6 @@ class TmdbApi(
                 protocol = URLProtocol.HTTPS
                 host = "api.themoviedb.org"
                 path("3/")
-                parameters.append("api_key", apiKey)
                 parameters.append("language", "en-US")
             }
         }
@@ -34,6 +36,7 @@ class TmdbApi(
         year: String? = null,
         includeAdult: Boolean = false
     ): TmdbSearchResponse = client.get("search/movie") {
+        parameter("api_key", keyProvider.getKey())
         parameter("query", query)
         parameter("year", year)
         parameter("include_adult", includeAdult)
@@ -47,6 +50,7 @@ class TmdbApi(
         id: Int,
         append: String = "videos,watch/providers"
     ): TmdbMovieDetailDto = client.get("movie/$id") {
+        parameter("api_key", keyProvider.getKey())
         parameter("append_to_response", append)
     }.body()
 
@@ -62,6 +66,7 @@ class TmdbApi(
         watchRegion: String? = null,
         page: Int = 1
     ): TmdbSearchResponse = client.get("discover/movie") {
+        parameter("api_key", keyProvider.getKey())
         parameter("with_genres", genreId)
         parameter("vote_average.gte", minRating)
         parameter("vote_count.gte", minVotes)
@@ -75,6 +80,7 @@ class TmdbApi(
     /** Full provider catalog for a region, used to populate the OTT picker. */
     suspend fun getWatchProviders(watchRegion: String): TmdbProviderListResponse =
         client.get("watch/providers/movie") {
+            parameter("api_key", keyProvider.getKey())
             parameter("watch_region", watchRegion)
         }.body()
 
@@ -85,6 +91,7 @@ class TmdbApi(
         year: String? = null,
         includeAdult: Boolean = false
     ): TmdbTvSearchResponse = client.get("search/tv") {
+        parameter("api_key", keyProvider.getKey())
         parameter("query", query)
         parameter("first_air_date_year", year)
         parameter("include_adult", includeAdult)
@@ -94,6 +101,7 @@ class TmdbApi(
         id: Int,
         append: String = "videos,watch/providers"
     ): TmdbTvDetailDto = client.get("tv/$id") {
+        parameter("api_key", keyProvider.getKey())
         parameter("append_to_response", append)
     }.body()
 
@@ -107,6 +115,7 @@ class TmdbApi(
         watchRegion: String? = null,
         page: Int = 1
     ): TmdbTvSearchResponse = client.get("discover/tv") {
+        parameter("api_key", keyProvider.getKey())
         parameter("with_genres", genreId)
         parameter("vote_average.gte", minRating)
         parameter("vote_count.gte", minVotes)

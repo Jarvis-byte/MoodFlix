@@ -61,16 +61,22 @@ class DiscoverViewModel @Inject constructor(
         .map { list -> list.any { it.hasKey } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    val shouldShowIntro: StateFlow<Boolean> = prefs.discoverIntroSeen
-        .map { seen -> !seen }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    /**
+     * Which coach mark step to show.
+     * -1 = none (intro already seen), 0 = first time open.
+     * The screen manages local step progression (0 → 1 → dismiss).
+     */
+    val coachStep: StateFlow<Int> = prefs.discoverIntroSeen
+        .map { seen -> if (seen) -1 else 0 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), -1)
 
     init {
         loadOttProviders()
         analytics.log(AnalyticsEvent.DiscoverScreenOpened)
     }
 
-    fun markIntroSeen() {
+    /** Called when the user dismisses the last coach mark step. */
+    fun advanceCoach() {
         viewModelScope.launch { prefs.markDiscoverIntroSeen() }
     }
 

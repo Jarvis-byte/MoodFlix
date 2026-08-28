@@ -14,6 +14,7 @@ import com.arka.moodflix.data.repository.AiKeyRepositoryImpl
 import com.arka.moodflix.data.repository.MovieRepositoryImpl
 import com.arka.moodflix.domain.repository.AiKeyRepository
 import com.arka.moodflix.domain.repository.MovieRepository
+import com.arka.moodflix.domain.repository.TmdbKeyProvider
 import com.arka.moodflix.domain.usecase.GetOttProvidersUseCase
 import com.arka.moodflix.domain.usecase.GetRecommendationsUseCase
 import com.arka.moodflix.domain.usecase.ObserveConnectedProvidersUseCase
@@ -74,7 +75,9 @@ class IosAppContainer(tmdbApiKey: String) {
     private val secureKeyStore: SecureKeyStore = IosSecureKeyStore()
     private val userPreferences: UserPreferences = IosUserPreferences()
 
-    private val tmdbApi = TmdbApi(httpClient, tmdbApiKey)
+    // iOS doesn't have a Remote Config-backed provider yet, so the key passed
+    // in at construction is returned as-is on every call.
+    private val tmdbApi = TmdbApi(httpClient, TmdbKeyProvider { tmdbApiKey })
 
     private val aiProviderClients: Set<AiProviderClient> = setOf(
         GeminiClient(httpClient),

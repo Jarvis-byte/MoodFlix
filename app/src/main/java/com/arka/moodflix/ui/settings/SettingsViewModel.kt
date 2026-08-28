@@ -1,5 +1,6 @@
 package com.arka.moodflix.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arka.moodflix.core.analytics.AnalyticsEvent
@@ -7,7 +8,9 @@ import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.domain.model.AiProviderType
 import com.arka.moodflix.domain.model.ConnectedProvider
+import com.arka.moodflix.domain.model.User
 import com.arka.moodflix.domain.repository.AiKeyRepository
+import com.arka.moodflix.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -38,11 +41,14 @@ sealed interface SettingsEvent {
 class SettingsViewModel @Inject constructor(
     private val keyRepository: AiKeyRepository,
     private val prefs: UserPreferences,
+    private val authRepository: AuthRepository,
     private val analytics: AnalyticsManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    val currentUser: StateFlow<User?> = authRepository.authState
 
     val providers: StateFlow<List<ConnectedProvider>> = keyRepository.connectedProviders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -103,5 +109,13 @@ class SettingsViewModel @Inject constructor(
 
     fun setCountry(code: String) {
         viewModelScope.launch { prefs.setWatchCountry(code) }
+    }
+
+    fun signOut(context: Context, onSignedOut: () -> Unit) {
+        viewModelScope.launch {
+            authRepository.signOut(context)
+            analytics.log(AnalyticsEvent.LoggedOut)
+            onSignedOut()
+        }
     }
 }

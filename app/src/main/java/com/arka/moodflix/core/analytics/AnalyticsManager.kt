@@ -65,6 +65,17 @@ class AnalyticsManager @Inject constructor() {
                 fa.logEvent("ai_provider_removed", bundle {
                     putString("provider", event.provider)
                 })
+
+            AnalyticsEvent.LoginSucceeded ->
+                fa.logEvent(FirebaseAnalytics.Event.LOGIN, bundle {
+                    putString(FirebaseAnalytics.Param.METHOD, "google")
+                })
+
+            AnalyticsEvent.LoginFailed ->
+                fa.logEvent("login_failed", null)
+
+            AnalyticsEvent.LoggedOut ->
+                fa.logEvent("logged_out", null)
         }
     }
 

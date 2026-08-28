@@ -82,31 +82,36 @@ struct DetailView: View {
 
     private func backdrop(for movie: Movie) -> some View {
         let imageUrlString = movie.trailer?.thumbnailUrl ?? movie.backdropUrl
-        return ZStack {
-            AsyncImage(url: imageUrlString.flatMap { URL(string: $0) }) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Color.moodSurfaceVariant
-            }
-            .aspectRatio(16.0 / 9.0, contentMode: .fill)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .clipped()
-
-            if let trailer = movie.trailer {
-                Button {
-                    playingTrailer = trailer
-                    showTrailerPlayer = true
-                } label: {
-                    Image(systemName: "play.fill")
-                        .font(.title2)
-                        .foregroundStyle(Color.moodOnPrimary)
-                        .frame(width: 58, height: 58)
-                        .background(Circle().fill(Color.moodPrimary))
+        // Size the frame with an invisible Color.clear first, then overlay
+        // the image and button on top of it - both overlays resolve against
+        // the exact same geometry this way, so the button is guaranteed to
+        // land in the visual center of the image, not just the ZStack's
+        // idealized (and possibly mismatched) intrinsic size.
+        return Color.clear
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .overlay {
+                AsyncImage(url: imageUrlString.flatMap { URL(string: $0) }) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Color.moodSurfaceVariant
                 }
             }
-        }
-        .frame(maxWidth: .infinity)
-        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .overlay {
+                if let trailer = movie.trailer {
+                    Button {
+                        playingTrailer = trailer
+                        showTrailerPlayer = true
+                    } label: {
+                        Image(systemName: "play.fill")
+                            .font(.title2)
+                            .foregroundStyle(Color.moodOnPrimary)
+                            .frame(width: 58, height: 58)
+                            .background(Circle().fill(Color.moodPrimary))
+                    }
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private func metaLine(for movie: Movie) -> String {

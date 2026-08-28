@@ -1,64 +1,36 @@
 import SwiftUI
-import WebKit
+import SafariServices
 
-/// Embeds YouTube's iframe player - no embedded-video screen exists on
-/// Android yet (it just opens the YouTube link externally there), so this is
-/// iOS-only for now. A WKWebView loading the standard embed URL is the
-/// lightweight, ToS-compliant way to get real in-app playback without
-/// pulling in the full YouTube iOS Player SDK.
+/// Plays the YouTube trailer in-app as a modal sheet.
+///
+/// This used to be a custom WKWebView embed of YouTube's iframe player, but
+/// WKWebView-hosted video reliably renders as a solid black rectangle in the
+/// iOS Simulator (a known WebKit/Simulator compositing limitation - it does
+/// work on a real device, but that's cold comfort while developing against
+/// the Simulator). SFSafariViewController uses the real Safari rendering
+/// process instead of an embedded WKWebView, which doesn't have that bug, so
+/// playback is reliable in both the Simulator and on-device at the cost of
+/// showing Safari's own chrome (address bar) rather than fully custom UI.
 struct TrailerPlayerView: View {
-    @Environment(\.dismiss) private var dismiss
-
     let youtubeKey: String
     let title: String
 
     var body: some View {
-        NavigationStack {
-            YouTubeEmbedWebView(youtubeKey: youtubeKey)
-                .background(Color.black)
-                .ignoresSafeArea(edges: .bottom)
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(Color.black, for: .navigationBar)
-                .toolbarColorScheme(.dark, for: .navigationBar)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(action: { dismiss() }) {
-                            Image(systemName: "xmark")
-                                .foregroundStyle(.white)
-                        }
-                    }
-                }
+        if let url = URL(string: "https://www.youtube.com/watch?v=\(youtubeKey)") {
+            SafariView(url: url)
+                .ignoresSafeArea()
         }
-        .preferredColorScheme(.dark)
     }
 }
 
-private struct YouTubeEmbedWebView: UIViewRepresentable {
-    let youtubeKey: String
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
 
-    func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        // Lets the video play inline in the web view instead of forcing
-        // fullscreen-only playback, and allows autoplay without a user
-        // gesture inside the embed (autoplay is still muted-by-default per
-        // WebKit policy unless this is set).
-        config.allowsInlineMediaPlayback = true
-        config.mediaTypesRequiringUserActionForPlayback = []
-
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.scrollView.isScrollEnabled = false
-        webView.backgroundColor = .black
-        webView.isOpaque = false
-        return webView
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let config = SFSafariViewController.Configuration()
+        config.entersReaderIfAvailable = false
+        return SFSafariViewController(url: url, configuration: config)
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        guard let url = URL(
-            string: "https://www.youtube.com/embed/\(youtubeKey)?playsinline=1&autoplay=1&rel=0"
-        ) else { return }
-        if webView.url != url {
-            webView.load(URLRequest(url: url))
-        }
-    }
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }

@@ -17,12 +17,14 @@ import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
+import com.arka.moodflix.ui.auth.LoginScreen
 import com.arka.moodflix.ui.detail.DetailScreen
 import com.arka.moodflix.ui.discover.DiscoverScreen
 import com.arka.moodflix.ui.results.ResultsScreen
 import com.arka.moodflix.ui.settings.SettingsScreen
 
 object Routes {
+    const val LOGIN = "login"
     const val DISCOVER = "discover"
     const val SETTINGS = "settings"
     const val DETAIL = "detail/{movieId}/{mediaType}"
@@ -67,7 +69,7 @@ fun MoodFlixNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Routes.DISCOVER,
+        startDestination = Routes.LOGIN,
         enterTransition = {
             slideInHorizontally(tween(280)) { it / 6 } + fadeIn(tween(280))
         },
@@ -77,6 +79,16 @@ fun MoodFlixNavHost(
             slideOutHorizontally(tween(240)) { it / 6 } + fadeOut(tween(200))
         }
     ) {
+
+        composable(Routes.LOGIN) {
+            LoginScreen(
+                onLoggedIn = {
+                    navController.navigate(Routes.DISCOVER) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         composable(Routes.DISCOVER) {
             DiscoverScreen(
@@ -92,7 +104,12 @@ fun MoodFlixNavHost(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                onOpenUrl = onOpenUrl
+                onOpenUrl = onOpenUrl,
+                onLoggedOut = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
 

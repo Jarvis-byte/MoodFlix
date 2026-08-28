@@ -26,20 +26,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,231 +49,240 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
+import com.arka.moodflix.ui.components.CoachMarkOverlay
+import com.arka.moodflix.ui.components.CoachStep
 import com.arka.moodflix.ui.components.MoodChip
 import com.arka.moodflix.ui.components.ProviderChip
 import com.arka.moodflix.ui.components.RatingSlider
-import kotlinx.coroutines.delay
+import com.arka.moodflix.ui.components.coachTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverScreen(
     onOpenSettings: () -> Unit,
     onSearch: (Mood, Genre, Float, String, List<Int>, MediaTypeFilter) -> Unit,
-    viewModel: DiscoverViewModel = hiltViewModel(),
+    viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val hasProvider by viewModel.hasAnyProvider.collectAsStateWithLifecycle()
-    val shouldShowIntro by viewModel.shouldShowIntro.collectAsStateWithLifecycle()
+    val introCoachStep by viewModel.coachStep.collectAsStateWithLifecycle()
 
-    // A real TooltipState hoisted here (not created fresh inside the tooltip
-    // block below) so we can call .show() on it programmatically - PlainTooltip
-    // only reveals itself on long-press by default, which nobody discovers
-    // on their own, so the first-run coach mark triggers it explicitly instead.
-    val settingsTooltipState = rememberTooltipState()
+    // Screen-space bounds captured via onGloballyPositioned
+    var settingsBounds by remember { mutableStateOf<Rect?>(null) }
+    var moodGridBounds by remember { mutableStateOf<Rect?>(null) }
 
-    LaunchedEffect(shouldShowIntro) {
-        if (shouldShowIntro) {
-            delay(700) // let the screen settle before popping it
-            settingsTooltipState.show()
-            viewModel.markIntroSeen()
-        }
+    // Local step index — resets only when introCoachStep flips from -1 to 0
+    var localStep by remember(introCoachStep) {
+        mutableIntStateOf(if (introCoachStep >= 0) 0 else -1)
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "MoodFlix",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                actions = {
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text("Connect your AI provider") } },
-                        state = settingsTooltipState
-                    ) {
-                        IconButton(onClick = onOpenSettings) {
+    val coachSteps = remember(settingsBounds, moodGridBounds) {
+        listOf(
+            CoachStep(
+                title = "Connect your AI",
+                body = "Tap here to add your free Gemini, ChatGPT or Claude key. MoodFlix uses your key — nothing is charged to the app.",
+                targetBounds = settingsBounds,
+                spotlightRadius = 32.dp
+            ),
+            CoachStep(
+                title = "Pick a mood",
+                body = "Choose how you're feeling right now — the AI picks films and series that genuinely match it, not just the genre.",
+                targetBounds = moodGridBounds,
+                spotlightRadius = 120.dp
+            )
+        )
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "MoodFlix",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = onOpenSettings,
+                            modifier = Modifier.coachTarget { settingsBounds = it }
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = "Settings",
                                 tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        }
-    ) { padding ->
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(28.dp)
-        ) {
-
-            item {
-                Text(
-                    text = "Aaj kya dekhna hai?",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Pick a mood. The rest is on us.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
             }
+        ) { padding ->
 
-            item {
-                SectionHeader("Looking for")
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MediaTypeFilter.entries.forEach { filter ->
-                        MoodChip(
-                            label = filter.label,
-                            selected = state.mediaFilter == filter,
-                            onClick = { viewModel.onEvent(DiscoverEvent.MediaFilterSelected(filter)) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp)
+            ) {
 
-            item {
-                SectionHeader("Mood")
-                Spacer(Modifier.height(8.dp))
-                MoodGrid(
-                    selected = state.selectedMood,
-                    onSelect = { viewModel.onEvent(DiscoverEvent.MoodSelected(it)) }
-                )
-            }
-
-            item {
-                SectionHeader("Genre")
-                Spacer(Modifier.height(8.dp))
-                LazyRow(
-                    contentPadding = PaddingValues(start = 4.dp, end = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(Genre.entries.toList()) { genre ->
-                        MoodChip(
-                            label = genre.label,
-                            selected = state.selectedGenre == genre,
-                            onClick = { viewModel.onEvent(DiscoverEvent.GenreSelected(genre)) }
-                        )
-                    }
-                }
-                if (state.mediaFilter != MediaTypeFilter.MOVIES &&
-                    state.selectedGenre.tvGenreId == null &&
-                    state.selectedGenre != Genre.ANY
-                ) {
+                item {
+                    Text(
+                        text = "Aaj kya dekhna hai?",
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "${state.selectedGenre.label} doesn't map to a TV genre - series results won't be genre-filtered.",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = "Pick a mood. The rest is on us.",
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
 
-            if (state.availableProviders.isNotEmpty()) {
                 item {
-                    SectionHeader("Where do you watch?")
+                    SectionHeader("Looking for")
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MediaTypeFilter.entries.forEach { filter ->
+                            MoodChip(
+                                label = filter.label,
+                                selected = state.mediaFilter == filter,
+                                onClick = { viewModel.onEvent(DiscoverEvent.MediaFilterSelected(filter)) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    SectionHeader("Mood")
+                    Spacer(Modifier.height(8.dp))
+                    MoodGrid(
+                        selected = state.selectedMood,
+                        onSelect = { viewModel.onEvent(DiscoverEvent.MoodSelected(it)) },
+                        modifier = Modifier.coachTarget { moodGridBounds = it }
+                    )
+                }
+
+                item {
+                    SectionHeader("Genre")
                     Spacer(Modifier.height(8.dp))
                     LazyRow(
                         contentPadding = PaddingValues(start = 4.dp, end = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        item {
+                        items(Genre.entries.toList()) { genre ->
                             MoodChip(
-                                label = "All platforms",
-                                selected = state.selectedProviderIds.isEmpty(),
-                                onClick = { viewModel.onEvent(DiscoverEvent.ClearProviders) }
-                            )
-                        }
-                        items(state.availableProviders, key = { it.id }) { provider ->
-                            ProviderChip(
-                                name = provider.name,
-                                logoUrl = provider.logoUrl,
-                                selected = provider.id in state.selectedProviderIds,
-                                onClick = { viewModel.onEvent(DiscoverEvent.ProviderToggled(provider.id)) }
+                                label = genre.label,
+                                selected = state.selectedGenre == genre,
+                                onClick = { viewModel.onEvent(DiscoverEvent.GenreSelected(genre)) }
                             )
                         }
                     }
-                    if (state.selectedProviderIds.isNotEmpty()) {
+                    if (state.mediaFilter != MediaTypeFilter.MOVIES &&
+                        state.selectedGenre.tvGenreId == null &&
+                        state.selectedGenre != Genre.ANY
+                    ) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Only showing titles on ${state.selectedProviderIds.size} selected platform(s)",
+                            text = "${state.selectedGenre.label} doesn't map to a TV genre - series results won't be genre-filtered.",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-            }
 
-            item {
-                RatingSlider(
-                    value = state.minRating,
-                    onValueChange = { viewModel.onEvent(DiscoverEvent.RatingChanged(it)) }
-                )
-            }
-
-            item {
-                OutlinedTextField(
-                    value = state.freeText,
-                    onValueChange = { viewModel.onEvent(DiscoverEvent.FreeTextChanged(it)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Anything else? (optional)") },
-                    placeholder = { Text("no subtitles, under 2 hours, nothing depressing") },
-                    shape = RoundedCornerShape(16.dp),
-                    maxLines = 3,
-                    keyboardOptions = KeyboardOptions.Default
-                )
-            }
-
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = {
-                            state.selectedMood?.let { mood ->
-                                viewModel.logSearch()
-                                onSearch(
-                                    mood,
-                                    state.selectedGenre,
-                                    state.minRating,
-                                    state.freeText,
-                                    state.selectedProviderIds.toList(),
-                                    state.mediaFilter
+                if (state.availableProviders.isNotEmpty()) {
+                    item {
+                        SectionHeader("Where do you watch?")
+                        Spacer(Modifier.height(8.dp))
+                        LazyRow(
+                            contentPadding = PaddingValues(start = 4.dp, end = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                MoodChip(
+                                    label = "All platforms",
+                                    selected = state.selectedProviderIds.isEmpty(),
+                                    onClick = { viewModel.onEvent(DiscoverEvent.ClearProviders) }
                                 )
                             }
-                        },
-                        enabled = state.canSearch,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(54.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text("Find me something", style = MaterialTheme.typography.labelLarge)
+                            items(state.availableProviders, key = { it.id }) { provider ->
+                                ProviderChip(
+                                    name = provider.name,
+                                    logoUrl = provider.logoUrl,
+                                    selected = provider.id in state.selectedProviderIds,
+                                    onClick = { viewModel.onEvent(DiscoverEvent.ProviderToggled(provider.id)) }
+                                )
+                            }
+                        }
+                        if (state.selectedProviderIds.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Only showing titles on ${state.selectedProviderIds.size} selected platform(s)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                }
 
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text("Surprise me with a random mood") } },
-                        state = rememberTooltipState()
-                    ) {
+                item {
+                    RatingSlider(
+                        value = state.minRating,
+                        onValueChange = { viewModel.onEvent(DiscoverEvent.RatingChanged(it)) }
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = state.freeText,
+                        onValueChange = { viewModel.onEvent(DiscoverEvent.FreeTextChanged(it)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Anything else? (optional)") },
+                        placeholder = { Text("no subtitles, under 2 hours, nothing depressing") },
+                        shape = RoundedCornerShape(16.dp),
+                        maxLines = 3,
+                        keyboardOptions = KeyboardOptions.Default
+                    )
+                }
+
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = {
+                                state.selectedMood?.let { mood ->
+                                    viewModel.logSearch()
+                                    onSearch(
+                                        mood,
+                                        state.selectedGenre,
+                                        state.minRating,
+                                        state.freeText,
+                                        state.selectedProviderIds.toList(),
+                                        state.mediaFilter
+                                    )
+                                }
+                            },
+                            enabled = state.canSearch,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(54.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text("Find me something", style = MaterialTheme.typography.labelLarge)
+                        }
+
                         OutlinedButton(
                             onClick = {
                                 val mood = viewModel.surpriseMood()
@@ -294,13 +303,26 @@ fun DiscoverScreen(
                         }
                     }
                 }
-            }
 
-            if (!hasProvider) {
-                item { ConnectProviderHint(onOpenSettings) }
-            }
+                if (!hasProvider) {
+                    item { ConnectProviderHint(onOpenSettings) }
+                }
 
-            item { Spacer(Modifier.height(24.dp)) }
+                item { Spacer(Modifier.height(24.dp)) }
+            }
+        }
+
+        // Coach mark overlay — sits on top of everything
+        if (localStep >= 0 && localStep < coachSteps.size) {
+            CoachMarkOverlay(
+                steps = coachSteps,
+                currentStep = localStep,
+                onNext = { localStep++ },
+                onFinish = {
+                    localStep = -1
+                    viewModel.advanceCoach()
+                }
+            )
         }
     }
 }
@@ -321,10 +343,12 @@ private fun SectionHeader(title: String) {
 private fun MoodGrid(
     selected: Mood?,
     onSelect: (Mood) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    // A simple wrapped flow: two moods per row keeps labels readable
-    // without pulling in a FlowRow experimental API.
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Mood.entries.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { mood ->

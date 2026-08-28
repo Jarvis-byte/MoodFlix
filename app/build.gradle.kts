@@ -40,6 +40,16 @@ android {
             "TMDB_API_KEY",
             "\"${localProps.getProperty("TMDB_API_KEY", "")}\""
         )
+
+        // Web client ID of the OAuth client Firebase generates once Google is
+        // enabled as a sign-in provider (Firebase console > Authentication >
+        // Sign-in method > Google). Credential Manager needs this to know
+        // which backend to issue the ID token for.
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${localProps.getProperty("GOOGLE_WEB_CLIENT_ID", "")}\""
+        )
     }
 
     signingConfigs {
@@ -128,4 +138,10 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.remote.config)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play)
+    implementation(libs.googleid)
 }

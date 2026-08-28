@@ -42,4 +42,10 @@ sealed interface AnalyticsEvent {
     data class AiProviderConnected(val provider: String) : AnalyticsEvent
 
     data class AiProviderRemoved(val provider: String) : AnalyticsEvent
+
+    data object LoginSucceeded : AnalyticsEvent
+
+    data object LoginFailed : AnalyticsEvent
+
+    data object LoggedOut : AnalyticsEvent
 }

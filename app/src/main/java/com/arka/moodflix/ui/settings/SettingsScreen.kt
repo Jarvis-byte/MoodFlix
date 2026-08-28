@@ -34,18 +34,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.arka.moodflix.domain.model.AiProviderType
 import com.arka.moodflix.domain.model.ConnectedProvider
 
@@ -54,11 +63,32 @@ import com.arka.moodflix.domain.model.ConnectedProvider
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenUrl: (String) -> Unit,
+    onLoggedOut: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val providers by viewModel.providers.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    var showSignOutConfirm by remember { mutableStateOf(false) }
+
+    if (showSignOutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirm = false },
+            title = { Text("Log out?") },
+            text = { Text("You'll need to sign in with Google again to use MoodFlix.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSignOutConfirm = false
+                    viewModel.signOut(context, onSignedOut = onLoggedOut)
+                }) { Text("Log out", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -92,6 +122,15 @@ fun SettingsScreen(
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
+            item {
+                AccountCard(
+                    displayName = currentUser?.displayName,
+                    email = currentUser?.email,
+                    photoUrl = currentUser?.photoUrl,
+                    onLogOut = { showSignOutConfirm = true }
+                )
+            }
 
             item {
                 Text(
@@ -239,6 +278,63 @@ private fun ProviderCard(
                         TextButton(onClick = onGetKey) { Text("Get a free key") }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountCard(
+    displayName: String?,
+    email: String?,
+    photoUrl: String?,
+    onLogOut: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (photoUrl != null) {
+                AsyncImage(
+                    model = photoUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(Modifier.size(12.dp))
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = displayName ?: "Signed in",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (email != null) {
+                    Text(
+                        text = email,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            TextButton(onClick = onLogOut) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Spacer(Modifier.size(4.dp))
+                Text("Log out", color = MaterialTheme.colorScheme.error)
             }
         }
     }
