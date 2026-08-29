@@ -77,6 +77,61 @@ class TmdbApi(
         parameter("page", page)
     }.body()
 
+    /**
+     * "Top movies this month": popularity-sorted movies whose primary release
+     * date falls within [releaseFrom, releaseFrom] (each "yyyy-MM-dd", caller
+     * computes the calendar-month range since KMP commonMain has no date API
+     * here). A low vote-count floor since a brand-new release hasn't had time
+     * to rack up votes yet.
+     */
+    suspend fun discoverThisMonth(
+        releaseFrom: String,
+        releaseTo: String,
+        genreId: String? = null,
+        minRating: Float? = null,
+        minVotes: Int = 20,
+        page: Int = 1
+    ): TmdbSearchResponse = client.get("discover/movie") {
+        parameter("api_key", keyProvider.getKey())
+        parameter("primary_release_date.gte", releaseFrom)
+        parameter("primary_release_date.lte", releaseTo)
+        parameter("with_genres", genreId)
+        parameter("vote_average.gte", minRating)
+        parameter("sort_by", "popularity.desc")
+        parameter("vote_count.gte", minVotes)
+        parameter("page", page)
+    }.body()
+
+    /** TV equivalent of [discoverThisMonth] - filters on first_air_date instead of primary_release_date. */
+    suspend fun discoverTvThisMonth(
+        releaseFrom: String,
+        releaseTo: String,
+        genreId: String? = null,
+        minRating: Float? = null,
+        minVotes: Int = 20,
+        page: Int = 1
+    ): TmdbTvSearchResponse = client.get("discover/tv") {
+        parameter("api_key", keyProvider.getKey())
+        parameter("first_air_date.gte", releaseFrom)
+        parameter("first_air_date.lte", releaseTo)
+        parameter("with_genres", genreId)
+        parameter("vote_average.gte", minRating)
+        parameter("sort_by", "popularity.desc")
+        parameter("vote_count.gte", minVotes)
+        parameter("page", page)
+    }.body()
+
+    /**
+     * "More like this" on the detail screen. Recommendations (behavior-based:
+     * "people who watched this also watched") reads better here than the
+     * genre/keyword-based `similar` endpoint.
+     */
+    suspend fun getMovieRecommendations(id: Int, page: Int = 1): TmdbSearchResponse =
+        client.get("movie/$id/recommendations") {
+            parameter("api_key", keyProvider.getKey())
+            parameter("page", page)
+        }.body()
+
     /** Full provider catalog for a region, used to populate the OTT picker. */
     suspend fun getWatchProviders(watchRegion: String): TmdbProviderListResponse =
         client.get("watch/providers/movie") {
@@ -104,6 +159,13 @@ class TmdbApi(
         parameter("api_key", keyProvider.getKey())
         parameter("append_to_response", append)
     }.body()
+
+    /** TV equivalent of [getMovieRecommendations]. */
+    suspend fun getTvRecommendations(id: Int, page: Int = 1): TmdbTvSearchResponse =
+        client.get("tv/$id/recommendations") {
+            parameter("api_key", keyProvider.getKey())
+            parameter("page", page)
+        }.body()
 
     /** TV fallback path, mirroring discover/movie. */
     suspend fun discoverTv(

@@ -28,5 +28,6 @@ enum class Genre(val tmdbId: Int, val tvGenreId: Int?, val label: String) {
 
     companion object {
         fun fromTmdbId(id: Int) = entries.firstOrNull { it.tmdbId == id }
+        fun fromTvGenreId(id: Int) = entries.firstOrNull { it.tvGenreId == id }
     }
 }

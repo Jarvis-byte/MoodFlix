@@ -7,6 +7,7 @@ import com.arka.moodflix.data.remote.ai.AiRouter
 import com.arka.moodflix.data.remote.ai.PromptBuilder
 import com.arka.moodflix.data.remote.tmdb.TmdbApi
 import com.arka.moodflix.data.remote.tmdb.toDomain
+import com.arka.moodflix.data.remote.tmdb.toDomainLight
 import com.arka.moodflix.domain.model.AiSuggestion
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaType
@@ -36,6 +37,20 @@ class MovieRepositoryImpl(
     // the discover screen is revisited.
     private val providerCacheMutex = Mutex()
     private val providerCache = mutableMapOf<String, List<OttProvider>>()
+
+    // Search-tab caches: browsing back to the tab or re-typing an already
+    // searched query shouldn't re-hit the network - only pull-to-refresh should.
+    private val topMoviesCacheMutex = Mutex()
+    private var topMoviesCacheKey: String? = null
+    private var topMoviesCache: List<Movie> = emptyList()
+
+    private val searchCacheMutex = Mutex()
+    private val searchCache = mutableMapOf<String, List<Movie>>()
+
+    // "More like this" per title - opening the same detail again this
+    // session (e.g. via the back-navigation carousel) shouldn't re-fetch.
+    private val similarCacheMutex = Mutex()
+    private val similarCache = mutableMapOf<String, List<Movie>>()
 
     override fun recommend(query: MoodQuery): Flow<RecommendationState> = flow {
         emit(RecommendationState.AskingAi)
@@ -258,6 +273,115 @@ class MovieRepositoryImpl(
             AppResult.Success(curated)
         } catch (e: Exception) {
             AppResult.Failure(AppError.Unknown(e.message ?: "Could not load OTT platforms"))
+        }
+    }
+
+    override suspend fun getTopMoviesThisMonth(
+        releaseFrom: String,
+        releaseTo: String,
+        limit: Int,
+        genre: Genre,
+        minRating: Float,
+        forceRefresh: Boolean
+    ): AppResult<List<Movie>> {
+        val cacheKey = "$releaseFrom|$releaseTo|$limit|${genre.name}|$minRating"
+        if (!forceRefresh) {
+            topMoviesCacheMutex.withLock {
+                topMoviesCache.takeIf { topMoviesCacheKey == cacheKey }
+            }?.let { return AppResult.Success(it) }
+        }
+
+        val ratingParam = minRating.takeIf { it > 0f }
+
+        return try {
+            val movies = coroutineScope {
+                val moviesDeferred = async {
+                    runCatching {
+                        tmdb.discoverThisMonth(
+                            releaseFrom = releaseFrom,
+                            releaseTo = releaseTo,
+                            genreId = genre.takeIf { it != Genre.ANY }?.tmdbId?.toString(),
+                            minRating = ratingParam
+                        ).results.map { it.toDomainLight() }
+                    }.getOrDefault(emptyList())
+                }
+                val seriesDeferred = async {
+                    // No honest TV equivalent for this genre (e.g. Horror/Romance/Thriller) -
+                    // skip series rather than silently mapping to something close-but-wrong,
+                    // same call DiscoverScreen already makes for its own genre filter.
+                    if (genre != Genre.ANY && genre.tvGenreId == null) {
+                        emptyList()
+                    } else {
+                        runCatching {
+                            tmdb.discoverTvThisMonth(
+                                releaseFrom = releaseFrom,
+                                releaseTo = releaseTo,
+                                genreId = genre.takeIf { it != Genre.ANY }?.tvGenreId?.toString(),
+                                minRating = ratingParam
+                            ).results.map { it.toDomainLight() }
+                        }.getOrDefault(emptyList())
+                    }
+                }
+                (moviesDeferred.await() + seriesDeferred.await())
+                    .sortedByDescending { it.rating }
+                    .take(limit)
+            }
+            topMoviesCacheMutex.withLock {
+                topMoviesCacheKey = cacheKey
+                topMoviesCache = movies
+            }
+            AppResult.Success(movies)
+        } catch (e: Exception) {
+            AppResult.Failure(AppError.Unknown(e.message ?: "Could not load this month's titles"))
+        }
+    }
+
+    /** Movies and series merged, rating-sorted - the Search tab covers both media types. */
+    override suspend fun searchMovies(query: String, forceRefresh: Boolean): AppResult<List<Movie>> {
+        val cacheKey = query.trim().lowercase()
+        if (!forceRefresh) {
+            searchCacheMutex.withLock { searchCache[cacheKey] }?.let { return AppResult.Success(it) }
+        }
+
+        return try {
+            val results = coroutineScope {
+                val moviesDeferred = async {
+                    runCatching { tmdb.searchMovie(query).results.map { it.toDomainLight() } }
+                        .getOrDefault(emptyList())
+                }
+                val seriesDeferred = async {
+                    runCatching { tmdb.searchTv(query).results.map { it.toDomainLight() } }
+                        .getOrDefault(emptyList())
+                }
+                (moviesDeferred.await() + seriesDeferred.await())
+                    .sortedByDescending { it.rating }
+            }
+            searchCacheMutex.withLock { searchCache[cacheKey] = results }
+            AppResult.Success(results)
+        } catch (e: Exception) {
+            AppResult.Failure(AppError.Unknown(e.message ?: "Search failed"))
+        }
+    }
+
+    override suspend fun getSimilar(
+        tmdbId: Int,
+        mediaType: MediaType,
+        limit: Int
+    ): AppResult<List<Movie>> {
+        val cacheKey = "$tmdbId:${mediaType.name}"
+        similarCacheMutex.withLock { similarCache[cacheKey] }?.let { return AppResult.Success(it) }
+
+        return try {
+            val movies = if (mediaType == MediaType.SERIES) {
+                tmdb.getTvRecommendations(tmdbId).results.map { it.toDomainLight() }
+            } else {
+                tmdb.getMovieRecommendations(tmdbId).results.map { it.toDomainLight() }
+            }.take(limit)
+
+            similarCacheMutex.withLock { similarCache[cacheKey] = movies }
+            AppResult.Success(movies)
+        } catch (e: Exception) {
+            AppResult.Failure(AppError.Unknown(e.message ?: "Could not load similar titles"))
         }
     }
 

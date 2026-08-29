@@ -11,17 +11,23 @@ import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
 import com.arka.moodflix.domain.model.MoodQuery
 import com.arka.moodflix.domain.model.Movie
+import com.arka.moodflix.domain.model.watchlistId
 import com.arka.moodflix.domain.repository.RecommendationState
+import com.arka.moodflix.domain.repository.WatchlistRepository
 import com.arka.moodflix.domain.usecase.GetRecommendationsUseCase
 import com.arka.moodflix.ui.navigation.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class ResultsUiState(
@@ -43,9 +49,18 @@ data class ResultsUiState(
 @HiltViewModel
 class ResultsViewModel @Inject constructor(
     private val getRecommendations: GetRecommendationsUseCase,
+    private val watchlistRepository: WatchlistRepository,
     private val analytics: AnalyticsManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    val savedIds: StateFlow<Set<String>> = watchlistRepository.observeWatchlist()
+        .map { movies -> movies.map { it.watchlistId }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    fun toggleWatchlist(movie: Movie) {
+        viewModelScope.launch { watchlistRepository.toggle(movie) }
+    }
 
     private val mood: Mood = Mood.valueOf(checkNotNull(savedStateHandle["mood"]))
     private val genre: Genre = Genre.valueOf(checkNotNull(savedStateHandle["genre"]))

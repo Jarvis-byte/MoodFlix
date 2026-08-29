@@ -1,6 +1,7 @@
 package com.arka.moodflix.domain.repository
 
 import com.arka.moodflix.core.AppResult
+import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.MoodQuery
@@ -23,6 +24,31 @@ interface MovieRepository {
 
     /** Live provider catalog for a region, sorted by local popularity. */
     suspend fun getOttProviders(region: String): AppResult<List<OttProvider>>
+
+    /**
+     * Popularity-sorted movies whose primary release date falls in
+     * [releaseFrom, releaseTo] ("yyyy-MM-dd"), capped at [limit], optionally
+     * narrowed by [genre] and [minRating] (applied server-side, since TMDB's
+     * discover endpoint supports both). Cached per parameter combination for
+     * the session - pass [forceRefresh] (pull-to-refresh) to bypass it.
+     */
+    suspend fun getTopMoviesThisMonth(
+        releaseFrom: String,
+        releaseTo: String,
+        limit: Int = 20,
+        genre: Genre = Genre.ANY,
+        minRating: Float = 0f,
+        forceRefresh: Boolean = false
+    ): AppResult<List<Movie>>
+
+    /**
+     * Free-text movie title search, for the Search tab. Cached per query for
+     * the session - pass [forceRefresh] (pull-to-refresh) to bypass it.
+     */
+    suspend fun searchMovies(query: String, forceRefresh: Boolean = false): AppResult<List<Movie>>
+
+    /** "More like this" on the detail screen. Cached per title for the session. */
+    suspend fun getSimilar(tmdbId: Int, mediaType: MediaType, limit: Int = 15): AppResult<List<Movie>>
 }
 
 sealed interface RecommendationState {

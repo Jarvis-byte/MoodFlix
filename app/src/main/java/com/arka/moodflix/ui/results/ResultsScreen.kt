@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arka.moodflix.core.AppError
 import com.arka.moodflix.core.ads.RewardedAdManagerEntryPoint
 import com.arka.moodflix.domain.model.MediaType
+import com.arka.moodflix.domain.model.watchlistId
 import com.arka.moodflix.ui.components.MovieCard
 import com.arka.moodflix.ui.components.ReelLoadingAnimation
 import dagger.hilt.android.EntryPointAccessors
@@ -60,6 +61,7 @@ fun ResultsScreen(
     viewModel: ResultsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val savedIds by viewModel.savedIds.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
 
     val context = LocalContext.current
@@ -160,7 +162,9 @@ fun ResultsScreen(
                                 MovieCard(
                                     movie = movie,
                                     onClick = { onOpenMovie(movie.tmdbId, movie.mediaType) },
-                                    onPlayTrailer = { movie.trailer?.let { onPlayTrailer(it.youtubeKey) } }
+                                    onPlayTrailer = { movie.trailer?.let { onPlayTrailer(it.youtubeKey) } },
+                                    isSaved = movie.watchlistId in savedIds,
+                                    onToggleWatchlist = { viewModel.toggleWatchlist(movie) }
                                 )
                             }
                         }

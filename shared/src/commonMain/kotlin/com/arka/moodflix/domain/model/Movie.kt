@@ -46,3 +46,6 @@ data class WatchProvider(
 )
 
 enum class ProviderType { STREAM, RENT, BUY }
+
+/** tmdbId alone isn't unique - movie and TV id spaces overlap. */
+val Movie.watchlistId: String get() = "$tmdbId:${mediaType.name}"

@@ -4,7 +4,9 @@ import com.arka.moodflix.domain.repository.AiKeyRepository
 import com.arka.moodflix.domain.repository.MovieRepository
 import com.arka.moodflix.domain.usecase.GetOttProvidersUseCase
 import com.arka.moodflix.domain.usecase.GetRecommendationsUseCase
+import com.arka.moodflix.domain.usecase.GetTopMoviesThisMonthUseCase
 import com.arka.moodflix.domain.usecase.ObserveConnectedProvidersUseCase
+import com.arka.moodflix.domain.usecase.SearchMoviesUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,4 +32,12 @@ object UseCaseModule {
     @Provides
     fun provideObserveConnectedProvidersUseCase(repository: AiKeyRepository): ObserveConnectedProvidersUseCase =
         ObserveConnectedProvidersUseCase(repository)
+
+    @Provides
+    fun provideGetTopMoviesThisMonthUseCase(repository: MovieRepository): GetTopMoviesThisMonthUseCase =
+        GetTopMoviesThisMonthUseCase(repository)
+
+    @Provides
+    fun provideSearchMoviesUseCase(repository: MovieRepository): SearchMoviesUseCase =
+        SearchMoviesUseCase(repository)
 }

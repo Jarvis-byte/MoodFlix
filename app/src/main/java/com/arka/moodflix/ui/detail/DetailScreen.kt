@@ -5,7 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,18 +46,24 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.arka.moodflix.domain.model.MediaType
+import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.ProviderType
 import com.arka.moodflix.domain.model.WatchProvider
+import com.arka.moodflix.domain.model.watchlistId
+import com.arka.moodflix.ui.components.PosterGridCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     onBack: () -> Unit,
+    onOpenMovie: (Int, MediaType) -> Unit,
     onPlayTrailer: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
+    val savedIds by viewModel.savedIds.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -64,6 +73,17 @@ fun DetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (state.movie != null) {
+                        IconButton(onClick = viewModel::toggleWatchlist) {
+                            Icon(
+                                imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                                contentDescription = if (isSaved) "Remove from watchlist" else "Add to watchlist",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -104,96 +124,107 @@ fun DetailScreen(
                         .fillMaxSize()
                         .padding(padding)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        AsyncImage(
-                            model = movie.trailer?.thumbnailUrl ?: movie.backdropUrl,
-                            contentDescription = movie.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(16f / 9f)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            AsyncImage(
+                                model = movie.trailer?.thumbnailUrl ?: movie.backdropUrl,
+                                contentDescription = movie.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            movie.trailer?.let { trailer ->
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .size(58.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        .clickable {
+                                            viewModel.logTrailerPlayed()
+                                            onPlayTrailer(trailer.youtubeKey)
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.PlayArrow,
+                                        contentDescription = "Play trailer",
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(30.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(18.dp))
+
+                        Text(
+                            text = movie.title,
+                            style = MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
-                        movie.trailer?.let { trailer ->
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .size(58.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(MaterialTheme.colorScheme.primary)
-                                    .clickable {
-                                        viewModel.logTrailerPlayed()
-                                        onPlayTrailer(trailer.youtubeKey)
-                                    },
-                                contentAlignment = Alignment.Center
+
+                        Spacer(Modifier.height(6.dp))
+
+                        Text(
+                            text = buildString {
+                                append(String.format("%.1f", movie.rating))
+                                append(" · ")
+                                append(movie.year)
+                                if (movie.mediaType == MediaType.SERIES) {
+                                    movie.seasonCount?.let { append(" · $it season${if (it == 1) "" else "s"}") }
+                                    movie.episodeCount?.let { append(" · $it episodes") }
+                                    movie.runtimeMinutes?.let { append(" · ~$it min/ep") }
+                                } else {
+                                    movie.runtimeMinutes?.let { append(" · $it min") }
+                                }
+                                if (movie.genres.isNotEmpty()) {
+                                    append(" · ${movie.genres.joinToString(", ")}")
+                                }
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        Text(
+                            text = movie.overview,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+
+                        ProviderSection("Stream", movie.watchProviders.filter { it.type == ProviderType.STREAM })
+                        ProviderSection("Rent", movie.watchProviders.filter { it.type == ProviderType.RENT })
+                        ProviderSection("Buy", movie.watchProviders.filter { it.type == ProviderType.BUY })
+
+                        movie.justWatchLink?.let { link ->
+                            Spacer(Modifier.height(12.dp))
+                            Button(
+                                onClick = { onOpenUrl(link) },
+                                shape = RoundedCornerShape(14.dp)
                             ) {
-                                Icon(
-                                    Icons.Default.PlayArrow,
-                                    contentDescription = "Play trailer",
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(30.dp)
-                                )
+                                Text("See all watch options")
                             }
                         }
                     }
 
-                    Spacer(Modifier.height(18.dp))
-
-                    Text(
-                        text = movie.title,
-                        style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    Spacer(Modifier.height(6.dp))
-
-                    Text(
-                        text = buildString {
-                            append(String.format("%.1f", movie.rating))
-                            append(" · ")
-                            append(movie.year)
-                            if (movie.mediaType == MediaType.SERIES) {
-                                movie.seasonCount?.let { append(" · $it season${if (it == 1) "" else "s"}") }
-                                movie.episodeCount?.let { append(" · $it episodes") }
-                                movie.runtimeMinutes?.let { append(" · ~$it min/ep") }
-                            } else {
-                                movie.runtimeMinutes?.let { append(" · $it min") }
-                            }
-                            if (movie.genres.isNotEmpty()) {
-                                append(" · ${movie.genres.joinToString(", ")}")
-                            }
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    Text(
-                        text = movie.overview,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    Spacer(Modifier.height(24.dp))
-
-                    ProviderSection("Stream", movie.watchProviders.filter { it.type == ProviderType.STREAM })
-                    ProviderSection("Rent", movie.watchProviders.filter { it.type == ProviderType.RENT })
-                    ProviderSection("Buy", movie.watchProviders.filter { it.type == ProviderType.BUY })
-
-                    movie.justWatchLink?.let { link ->
-                        Spacer(Modifier.height(12.dp))
-                        Button(
-                            onClick = { onOpenUrl(link) },
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text("See all watch options")
-                        }
+                    if (state.similarMovies.isNotEmpty()) {
+                        Spacer(Modifier.height(28.dp))
+                        MoreLikeThisSection(
+                            movies = state.similarMovies,
+                            savedIds = savedIds,
+                            onSelect = { onOpenMovie(it.tmdbId, it.mediaType) },
+                            onToggleWatchlist = viewModel::toggleWatchlist
+                        )
                     }
 
                     Spacer(Modifier.height(40.dp))
@@ -223,6 +254,39 @@ private fun ProviderSection(label: String, providers: List<WatchProvider>) {
                         .size(46.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+            }
+        }
+    }
+}
+
+/** TMDB recommendations, as a plain horizontal row of poster cards below the watch-options button. */
+@Composable
+private fun MoreLikeThisSection(
+    movies: List<Movie>,
+    savedIds: Set<String>,
+    onSelect: (Movie) -> Unit,
+    onToggleWatchlist: (Movie) -> Unit
+) {
+    Column {
+        Text(
+            text = "More like this",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            items(movies, key = { it.tmdbId }) { movie ->
+                PosterGridCard(
+                    movie = movie,
+                    onClick = { onSelect(movie) },
+                    isSaved = movie.watchlistId in savedIds,
+                    onToggleWatchlist = { onToggleWatchlist(movie) },
+                    modifier = Modifier.width(150.dp)
                 )
             }
         }

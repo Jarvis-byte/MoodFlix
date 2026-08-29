@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +42,8 @@ fun MovieCard(
     movie: Movie,
     onClick: () -> Unit,
     onPlayTrailer: () -> Unit,
+    isSaved: Boolean = false,
+    onToggleWatchlist: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -79,6 +84,25 @@ fun MovieCard(
                             contentDescription = "Play trailer",
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                if (onToggleWatchlist != null) {
+                    IconButton(
+                        onClick = onToggleWatchlist,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(2.dp)
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.55f))
+                    ) {
+                        Icon(
+                            imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                            contentDescription = if (isSaved) "Remove from watchlist" else "Add to watchlist",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

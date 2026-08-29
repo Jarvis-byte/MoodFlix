@@ -105,6 +105,57 @@ fun TmdbTvDetailDto.toDomain(
 fun TmdbMovieDto.genreLabels(): List<String> =
     genreIds.mapNotNull { Genre.fromTmdbId(it)?.label }
 
+/**
+ * Cheap mapping straight from a search/discover list item - no per-title
+ * detail call, so no trailer/runtime/watch-providers. Used for browse grids
+ * (search results, "top this month") where fetching detail for 20+ items
+ * up front would be slow; [MovieRepository.getMovieDetail] fills those in
+ * once the user actually opens a title.
+ */
+fun TmdbMovieDto.toDomainLight(): Movie = Movie(
+    tmdbId = id,
+    mediaType = MediaType.MOVIE,
+    title = title,
+    year = releaseDate?.take(4).orEmpty(),
+    overview = overview,
+    posterUrl = posterUrl(posterPath),
+    backdropUrl = backdropUrl(backdropPath),
+    rating = voteAverage,
+    voteCount = voteCount,
+    runtimeMinutes = null,
+    seasonCount = null,
+    episodeCount = null,
+    genres = genreLabels(),
+    moodReason = "",
+    trailer = null,
+    watchProviders = emptyList(),
+    justWatchLink = null
+)
+
+fun TmdbTvDto.genreLabels(): List<String> =
+    genreIds.mapNotNull { Genre.fromTvGenreId(it)?.label }
+
+/** TV equivalent of [TmdbMovieDto.toDomainLight] - no per-title detail call. */
+fun TmdbTvDto.toDomainLight(): Movie = Movie(
+    tmdbId = id,
+    mediaType = MediaType.SERIES,
+    title = name,
+    year = firstAirDate?.take(4).orEmpty(),
+    overview = overview,
+    posterUrl = posterUrl(posterPath),
+    backdropUrl = backdropUrl(backdropPath),
+    rating = voteAverage,
+    voteCount = voteCount,
+    runtimeMinutes = null,
+    seasonCount = null,
+    episodeCount = null,
+    genres = genreLabels(),
+    moodReason = "",
+    trailer = null,
+    watchProviders = emptyList(),
+    justWatchLink = null
+)
+
 fun TmdbProviderEntryDto.toDomain(): com.arka.moodflix.domain.model.OttProvider =
     com.arka.moodflix.domain.model.OttProvider(
         id = providerId,
