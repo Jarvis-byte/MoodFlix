@@ -28,6 +28,8 @@ class RoomWatchlistRepository(
         }
     }
 
+    override suspend fun clearAll() = dao.clearAll()
+
     private fun WatchlistEntity.toDomain(): Movie = Movie(
         tmdbId = tmdbId,
         mediaType = MediaType.valueOf(mediaType),

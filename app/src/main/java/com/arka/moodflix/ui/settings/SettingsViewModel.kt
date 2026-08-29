@@ -11,6 +11,7 @@ import com.arka.moodflix.domain.model.ConnectedProvider
 import com.arka.moodflix.domain.model.User
 import com.arka.moodflix.domain.repository.AiKeyRepository
 import com.arka.moodflix.domain.repository.AuthRepository
+import com.arka.moodflix.domain.repository.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,6 +43,7 @@ class SettingsViewModel @Inject constructor(
     private val keyRepository: AiKeyRepository,
     private val prefs: UserPreferences,
     private val authRepository: AuthRepository,
+    private val watchlistRepository: WatchlistRepository,
     private val analytics: AnalyticsManager
 ) : ViewModel() {
 
@@ -114,6 +116,7 @@ class SettingsViewModel @Inject constructor(
     fun signOut(context: Context, onSignedOut: () -> Unit) {
         viewModelScope.launch {
             authRepository.signOut(context)
+            watchlistRepository.clearAll()
             analytics.log(AnalyticsEvent.LoggedOut)
             onSignedOut()
         }

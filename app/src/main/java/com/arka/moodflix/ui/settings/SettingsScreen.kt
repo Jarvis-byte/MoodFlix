@@ -161,9 +161,23 @@ fun SettingsScreen(
                     onGetKey = { onOpenUrl(provider.type.keyConsoleUrl) }
                 )
             }
+
+            item {
+                TextButton(onClick = { onOpenUrl(PRIVACY_POLICY_URL) }) {
+                    Text("Privacy Policy")
+                    Spacer(Modifier.size(4.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
     }
 }
+
+private const val PRIVACY_POLICY_URL = "https://claude.ai/code/artifact/3f79fda7-e6c1-4cc0-a032-b986ec41cff2"
 
 @Composable
 private fun ProviderCard(

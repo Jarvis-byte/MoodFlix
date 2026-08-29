@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.arka.moodflix.core.analytics.AnalyticsEvent
 import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.data.remote.config.FirebaseTmdbKeyProvider
+import com.arka.moodflix.domain.model.User
 import com.arka.moodflix.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,45 @@ class LoginViewModel @Inject constructor(
 
         viewModelScope.launch {
             authRepository.signInWithGoogle(context)
+                .onSuccess {
+                    tmdbKeyProvider.refresh()
+                    analytics.log(AnalyticsEvent.LoginSucceeded)
+                    _uiState.update { it.copy(isSigningIn = false) }
+                    onSuccess()
+                }
+                .onFailure { error ->
+                    analytics.log(AnalyticsEvent.LoginFailed)
+                    _uiState.update {
+                        it.copy(
+                            isSigningIn = false,
+                            error = error.message ?: "Sign-in failed. Try again."
+                        )
+                    }
+                }
+        }
+    }
+
+    fun signInWithEmail(email: String, password: String, onSuccess: () -> Unit) =
+        submitEmailAuth(email, password, onSuccess) { authRepository.signInWithEmail(it, password) }
+
+    fun signUpWithEmail(email: String, password: String, onSuccess: () -> Unit) =
+        submitEmailAuth(email, password, onSuccess) { authRepository.signUpWithEmail(it, password) }
+
+    private fun submitEmailAuth(
+        email: String,
+        password: String,
+        onSuccess: () -> Unit,
+        authCall: suspend (email: String) -> Result<User>
+    ) {
+        if (_uiState.value.isSigningIn) return
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.update { it.copy(error = "Enter your email and password.") }
+            return
+        }
+        _uiState.update { it.copy(isSigningIn = true, error = null) }
+
+        viewModelScope.launch {
+            authCall(email.trim())
                 .onSuccess {
                     tmdbKeyProvider.refresh()
                     analytics.log(AnalyticsEvent.LoginSucceeded)

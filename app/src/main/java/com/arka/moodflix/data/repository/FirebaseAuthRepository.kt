@@ -58,6 +58,16 @@ class FirebaseAuthRepository(
         authResult.user?.toDomain() ?: error("Firebase sign-in returned no user")
     }
 
+    override suspend fun signInWithEmail(email: String, password: String): Result<User> = runCatching {
+        val authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+        authResult.user?.toDomain() ?: error("Firebase sign-in returned no user")
+    }
+
+    override suspend fun signUpWithEmail(email: String, password: String): Result<User> = runCatching {
+        val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+        authResult.user?.toDomain() ?: error("Firebase sign-up returned no user")
+    }
+
     override suspend fun signOut(context: Context) {
         firebaseAuth.signOut()
         runCatching {

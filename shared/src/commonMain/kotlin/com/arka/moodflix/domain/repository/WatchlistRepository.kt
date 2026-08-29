@@ -15,4 +15,7 @@ interface WatchlistRepository {
     fun observeWatchlist(): Flow<List<Movie>>
     fun observeIsSaved(tmdbId: Int, mediaType: MediaType): Flow<Boolean>
     suspend fun toggle(movie: Movie)
+
+    /** Wipes the on-device watchlist - called on sign-out so the next signed-in account starts clean. */
+    suspend fun clearAll()
 }

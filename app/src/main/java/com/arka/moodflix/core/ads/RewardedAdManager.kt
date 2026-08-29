@@ -103,6 +103,6 @@ class RewardedAdManager @Inject constructor(
     }
 
     private companion object {
-        const val AD_UNIT_ID = "ca-app-pub-3940256099942544/5354046379"
+        const val AD_UNIT_ID = "ca-app-pub-9247188440103276/4817449031"
     }
 }
