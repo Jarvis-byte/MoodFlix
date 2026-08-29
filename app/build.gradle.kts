@@ -141,7 +141,10 @@ dependencies {
 
     implementation(libs.firebase.auth)
     implementation(libs.firebase.remote.config)
+    implementation(libs.firebase.firestore)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play)
     implementation(libs.googleid)
+
+    implementation(libs.play.services.ads)
 }

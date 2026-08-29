@@ -22,8 +22,10 @@ import com.arka.moodflix.ui.detail.DetailScreen
 import com.arka.moodflix.ui.discover.DiscoverScreen
 import com.arka.moodflix.ui.results.ResultsScreen
 import com.arka.moodflix.ui.settings.SettingsScreen
+import com.arka.moodflix.ui.splash.SplashScreen
 
 object Routes {
+    const val SPLASH = "splash"
     const val LOGIN = "login"
     const val DISCOVER = "discover"
     const val SETTINGS = "settings"
@@ -69,7 +71,7 @@ fun MoodFlixNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN,
+        startDestination = Routes.SPLASH,
         enterTransition = {
             slideInHorizontally(tween(280)) { it / 6 } + fadeIn(tween(280))
         },
@@ -79,6 +81,21 @@ fun MoodFlixNavHost(
             slideOutHorizontally(tween(240)) { it / 6 } + fadeOut(tween(200))
         }
     ) {
+
+        composable(Routes.SPLASH) {
+            SplashScreen(
+                onNavigateToDiscover = {
+                    navController.navigate(Routes.DISCOVER) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         composable(Routes.LOGIN) {
             LoginScreen(

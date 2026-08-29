@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Static amber filmstrip mark - the exact Material "Filled.Theaters" glyph
+     used (rotating) on the splash screen, reproduced here without animation
+     and scaled/centered into the adaptive icon's safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Amber play badge -->
     <path
         android:fillColor="#F5B942"
-        android:pathData="M24,54 A30,30 0 1,0 84,54 A30,30 0 1,0 24,54 Z" />
-    <!-- Play triangle cutout, matches background ink to read as a hole -->
-    <path
-        android:fillColor="#0B0B10"
-        android:pathData="M46,40 L46,68 L70,54 Z" />
-    <!-- Violet mood spark accent -->
-    <path
-        android:fillColor="#9B8CFF"
-        android:pathData="M76,26 A6,6 0 1,0 88,26 A6,6 0 1,0 76,26 Z" />
+        android:pathData="M70,30 L70,35.33 L64.67,35.33 L64.67,30 L43.33,30 L43.33,35.33
+                           L38,35.33 L38,30 L32.67,30 L32.67,78 L38,78 L38,72.67 L43.33,72.67
+                           L43.33,78 L64.67,78 L64.67,72.67 L70,72.67 L70,78 L75.33,78
+                           L75.33,30 Z
+                           M43.33,67.33 L38,67.33 L38,62 L43.33,62 Z
+                           M43.33,56.67 L38,56.67 L38,51.33 L43.33,51.33 Z
+                           M43.33,46 L38,46 L38,40.67 L43.33,40.67 Z
+                           M70,67.33 L64.67,67.33 L64.67,62 L70,62 Z
+                           M70,56.67 L64.67,56.67 L64.67,51.33 L70,51.33 Z
+                           M70,46 L64.67,46 L64.67,40.67 L70,40.67 Z" />
 </vector>
