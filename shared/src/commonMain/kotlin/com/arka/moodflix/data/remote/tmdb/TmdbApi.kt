@@ -1,6 +1,7 @@
 package com.arka.moodflix.data.remote.tmdb
 
 import com.arka.moodflix.domain.repository.TmdbKeyProvider
+import com.arka.moodflix.domain.repository.TmdbLanguageProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -15,10 +16,16 @@ import io.ktor.http.path
  * and can change without an app restart (e.g. once it's fetched right after
  * login). Each request function pulls the key itself, because Ktor's
  * defaultRequest block isn't a suspend context.
+ *
+ * [languageProvider] drives TMDB's `language` param the same way, so a
+ * language-toggle change (e.g. English to Hindi) picks up TMDB's own
+ * translated titles/overviews on the next call, not just the app's own UI
+ * chrome - defaultRequest's block runs fresh on every request, not once.
  */
 class TmdbApi(
     engine: HttpClient,
-    private val keyProvider: TmdbKeyProvider
+    private val keyProvider: TmdbKeyProvider,
+    private val languageProvider: TmdbLanguageProvider
 ) {
     private val client = engine.config {
         defaultRequest {
@@ -26,7 +33,7 @@ class TmdbApi(
                 protocol = URLProtocol.HTTPS
                 host = "api.themoviedb.org"
                 path("3/")
-                parameters.append("language", "en-US")
+                parameters.append("language", languageProvider.current())
             }
         }
     }

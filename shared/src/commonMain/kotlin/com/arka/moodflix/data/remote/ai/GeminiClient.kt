@@ -70,7 +70,7 @@ class GeminiClient(private val client: HttpClient) : AiProviderClient {
                     return AppResult.Failure(AppError.InvalidKey(type.displayName))
                 else -> if (!response.status.isSuccess()) {
                     return AppResult.Failure(
-                        AppError.Unknown("${type.displayName} returned ${response.status.value}")
+                        AppError.ProviderError(type.displayName, response.status.value)
                     )
                 }
             }
@@ -82,11 +82,11 @@ class GeminiClient(private val client: HttpClient) : AiProviderClient {
 
             PromptBuilder.parseSuggestions(text)
                 ?.let { AppResult.Success(it) }
-                ?: AppResult.Failure(AppError.ParseFailed())
+                ?: AppResult.Failure(AppError.ParseFailed)
         } catch (e: IOException) {
-            AppResult.Failure(AppError.Network())
+            AppResult.Failure(AppError.Network)
         } catch (e: Exception) {
-            AppResult.Failure(AppError.Unknown(e.message ?: "Gemini call failed"))
+            AppResult.Failure(AppError.Unknown)
         }
     }
 }

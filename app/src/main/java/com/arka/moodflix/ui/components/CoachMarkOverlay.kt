@@ -33,10 +33,12 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import com.arka.moodflix.R
 
 data class CoachStep(
     val title: String,
@@ -144,7 +146,9 @@ fun CoachMarkOverlay(
                         )
                     ) {
                         Text(
-                            text = if (isLast) "Got it!" else "Next →",
+                            text = stringResource(
+                                if (isLast) R.string.coach_got_it else R.string.coach_next
+                            ),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onPrimary
                         )

@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -73,6 +74,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.arka.moodflix.R
 import com.arka.moodflix.ui.theme.Amber300
 import com.arka.moodflix.ui.theme.Amber400
 import com.arka.moodflix.ui.theme.Amber700
@@ -294,7 +296,7 @@ private fun BottomCard(
 
         // Headline — Cream100 (onBackground).
         Text(
-            text  = "The Right Film\nfor How You\nFeel Tonight.",
+            text  = stringResource(R.string.login_headline),
             style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight    = FontWeight.ExtraBold,
                 lineHeight    = 42.sp,
@@ -308,7 +310,7 @@ private fun BottomCard(
 
         // Subtitle — Muted (onSurfaceVariant).
         Text(
-            text       = "Discover films and series picked for exactly\nhow you feel right now.",
+            text       = stringResource(R.string.login_subtitle),
             style      = MaterialTheme.typography.bodyMedium,
             color      = Muted,
             textAlign  = TextAlign.Center,
@@ -331,7 +333,7 @@ private fun BottomCard(
         } else {
             TextButton(onClick = { showEmailForm = true }) {
                 Text(
-                    text  = "Sign in with email",
+                    text  = stringResource(R.string.login_sign_in_with_email),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Muted
                 )
@@ -369,7 +371,7 @@ private fun EmailSignInForm(
         OutlinedTextField(
             value         = email,
             onValueChange = { email = it },
-            label         = { Text("Email") },
+            label         = { Text(stringResource(R.string.login_email_label)) },
             singleLine    = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             colors        = fieldColors,
@@ -381,7 +383,7 @@ private fun EmailSignInForm(
         OutlinedTextField(
             value         = password,
             onValueChange = { password = it },
-            label         = { Text("Password") },
+            label         = { Text(stringResource(R.string.login_password_label)) },
             singleLine    = true,
             visualTransformation = if (passwordVisible) {
                 VisualTransformation.None
@@ -392,7 +394,9 @@ private fun EmailSignInForm(
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                        contentDescription = stringResource(
+                            if (passwordVisible) R.string.cd_hide_password else R.string.cd_show_password
+                        ),
                         tint = Muted
                     )
                 }
@@ -423,7 +427,9 @@ private fun EmailSignInForm(
                 )
             } else {
                 Text(
-                    text  = if (isCreatingAccount) "Create account" else "Sign in",
+                    text  = stringResource(
+                        if (isCreatingAccount) R.string.login_create_account else R.string.login_sign_in
+                    ),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = Cream100
                 )
@@ -434,11 +440,13 @@ private fun EmailSignInForm(
 
         TextButton(onClick = { isCreatingAccount = !isCreatingAccount }) {
             Text(
-                text = if (isCreatingAccount) {
-                    "Already have an account? Sign in"
-                } else {
-                    "New here? Create an account"
-                },
+                text = stringResource(
+                    if (isCreatingAccount) {
+                        R.string.login_already_have_account
+                    } else {
+                        R.string.login_new_here
+                    }
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = Muted
             )
@@ -513,7 +521,7 @@ private fun GoogleSignInButton(isSigningIn: Boolean, onClick: () -> Unit) {
                 }
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text  = "Continue with Google",
+                    text  = stringResource(R.string.login_continue_with_google),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight    = FontWeight.SemiBold,
                         letterSpacing = 0.2.sp

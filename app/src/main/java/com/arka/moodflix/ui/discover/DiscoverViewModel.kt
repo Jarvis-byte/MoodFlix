@@ -9,10 +9,15 @@ import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaTypeFilter
 import com.arka.moodflix.domain.model.Mood
+import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.OttProvider
 import com.arka.moodflix.domain.usecase.GetOttProvidersUseCase
+import com.arka.moodflix.domain.usecase.GetTopMoviesThisMonthUseCase
 import com.arka.moodflix.domain.usecase.ObserveConnectedProvidersUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +27,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class DiscoverUiState(
     val selectedMood: Mood? = null,
@@ -31,9 +35,20 @@ data class DiscoverUiState(
     val freeText: String = "",
     val availableProviders: List<OttProvider> = emptyList(),
     val selectedProviderIds: Set<Int> = emptySet(),
-    val mediaFilter: MediaTypeFilter = MediaTypeFilter.BOTH
+    val mediaFilter: MediaTypeFilter = MediaTypeFilter.BOTH,
+    val topMoviesThisMonth: List<Movie> = emptyList(),
+    private val isLoadingProviders: Boolean = true,
+    private val isLoadingTopMovies: Boolean = true
 ) {
     val canSearch: Boolean get() = selectedMood != null
+
+    /**
+     * True until every screen-load network call (OTT providers, top movies
+     * this month) has settled - success or failure. The screen shows a full
+     * shimmer skeleton for the whole time rather than popping sections in
+     * one by one as each call resolves.
+     */
+    val isLoading: Boolean get() = isLoadingProviders || isLoadingTopMovies
 }
 
 sealed interface DiscoverEvent {
@@ -50,6 +65,7 @@ sealed interface DiscoverEvent {
 class DiscoverViewModel @Inject constructor(
     observeProviders: ObserveConnectedProvidersUseCase,
     private val getOttProviders: GetOttProvidersUseCase,
+    private val getTopMoviesThisMonth: GetTopMoviesThisMonthUseCase,
     private val prefs: UserPreferences,
     private val analytics: AnalyticsManager
 ) : ViewModel() {
@@ -72,6 +88,7 @@ class DiscoverViewModel @Inject constructor(
 
     init {
         loadOttProviders()
+        loadTopMoviesThisMonth()
         analytics.log(AnalyticsEvent.DiscoverScreenOpened)
     }
 
@@ -97,10 +114,30 @@ class DiscoverViewModel @Inject constructor(
     private fun loadOttProviders() {
         viewModelScope.launch {
             val region = prefs.watchCountry.first()
-            when (val result = getOttProviders(region)) {
-                is AppResult.Success ->
-                    _uiState.update { it.copy(availableProviders = result.data) }
-                is AppResult.Failure -> Unit
+            val providers = when (val result = getOttProviders(region)) {
+                is AppResult.Success -> result.data
+                is AppResult.Failure -> emptyList()
+            }
+            _uiState.update {
+                it.copy(availableProviders = providers, isLoadingProviders = false)
+            }
+        }
+    }
+
+    /** Feeds the peeking carousel between the header and "Looking for" - a silent, best-effort load. */
+    private fun loadTopMoviesThisMonth() {
+        viewModelScope.launch {
+            val today = LocalDate.now()
+            val format = DateTimeFormatter.ISO_LOCAL_DATE
+            val from = today.withDayOfMonth(1).format(format)
+            val to = today.withDayOfMonth(today.lengthOfMonth()).format(format)
+
+            val movies = when (val result = getTopMoviesThisMonth(from, to, limit = 10)) {
+                is AppResult.Success -> result.data
+                is AppResult.Failure -> emptyList()
+            }
+            _uiState.update {
+                it.copy(topMoviesThisMonth = movies, isLoadingTopMovies = false)
             }
         }
     }
@@ -134,6 +171,10 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverEvent.MediaFilterSelected ->
                 _uiState.update { it.copy(mediaFilter = event.filter) }
         }
+    }
+
+    fun logTopMoviesBannerTapped(tmdbId: Int) {
+        analytics.log(AnalyticsEvent.TopMoviesBannerTapped(tmdbId))
     }
 
     fun surpriseMood(): Mood {

@@ -18,3 +18,10 @@
 # Retrofit
 -keepattributes Signature, RuntimeVisibleAnnotations
 -keep,allowobfuscation interface retrofit2.http.*
+
+# Strip verbose/debug logging in release - Logger.d/w call these directly with
+# no BuildConfig.DEBUG guard, so without this rule they'd ship to production logcat.
+-assumenosideeffects class android.util.Log {
+    public static int d(...);
+    public static int v(...);
+}

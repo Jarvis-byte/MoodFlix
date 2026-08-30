@@ -40,11 +40,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arka.moodflix.R
 import com.arka.moodflix.core.AppError
+import com.arka.moodflix.core.localizedLabel
+import com.arka.moodflix.core.localizedMessage
 import com.arka.moodflix.core.ads.RewardedAdManagerEntryPoint
 import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.watchlistId
@@ -88,13 +92,16 @@ fun ResultsScreen(
                 title = {
                     Column {
                         Text(
-                            text = "${state.mood.label} picks",
+                            text = stringResource(R.string.results_mood_picks, state.mood.localizedLabel()),
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         if (state.selectedProviderCount > 0) {
                             Text(
-                                text = "Filtered to ${state.selectedProviderCount} platform(s)",
+                                text = stringResource(
+                                    R.string.results_filtered_to_platforms,
+                                    state.selectedProviderCount
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -103,7 +110,10 @@ fun ResultsScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -137,7 +147,7 @@ fun ResultsScreen(
                         if (state.usingTmdbFallback) {
                             item {
                                 Text(
-                                    text = "AI picks weren't available, so these are popular, well-rated films in your filters instead.",
+                                    text = stringResource(R.string.results_tmdb_fallback_note),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -146,7 +156,7 @@ fun ResultsScreen(
                             state.answeredBy?.let { provider ->
                                 item {
                                     Text(
-                                        text = "Curated by $provider",
+                                        text = stringResource(R.string.results_curated_by, provider),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -172,7 +182,11 @@ fun ResultsScreen(
                         if (state.phase is ResultsUiState.Phase.Loading || isShowingAd) {
                             item {
                                 LoadingRow(
-                                    if (isShowingAd) "Loading ad" else (state.phase as ResultsUiState.Phase.Loading).label
+                                    if (isShowingAd) {
+                                        stringResource(R.string.results_loading_ad)
+                                    } else {
+                                        (state.phase as ResultsUiState.Phase.Loading).label
+                                    }
                                 )
                             }
                         } else if (state.results.isNotEmpty()) {
@@ -192,7 +206,7 @@ fun ResultsScreen(
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Show me more like these")
+                                    Text(stringResource(R.string.results_show_me_more))
                                 }
                             }
                         }
@@ -247,13 +261,13 @@ private fun ErrorState(error: AppError, onRetry: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = error.message,
+            text = error.localizedMessage(),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.error,
             textAlign = TextAlign.Center
         )
         TextButton(onClick = onRetry) {
-            Text("Try again")
+            Text(stringResource(R.string.action_try_again))
         }
     }
 }

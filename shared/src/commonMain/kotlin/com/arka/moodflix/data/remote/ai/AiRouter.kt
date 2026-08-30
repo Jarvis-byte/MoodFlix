@@ -29,7 +29,7 @@ class AiRouter(
 
     suspend fun suggest(prompt: String): AppResult<RoutedSuggestions> {
         val order = keyRepository.fallbackOrder()
-        var lastError: AppError = AppError.NoKeysConfigured()
+        var lastError: AppError = AppError.NoKeysConfigured
         var triedAny = false
 
         for (type in order) {
@@ -53,13 +53,13 @@ class AiRouter(
                         return AppResult.Failure(result.error)
                     }
 
-                    Logger.w(TAG, "${type.displayName} failed: ${result.error.message}, falling back")
+                    Logger.w(TAG, "${type.displayName} failed: ${result.error}, falling back")
                 }
             }
         }
 
         return AppResult.Failure(
-            if (!triedAny) AppError.NoKeysConfigured() else lastError
+            if (!triedAny) AppError.NoKeysConfigured else lastError
         )
     }
 

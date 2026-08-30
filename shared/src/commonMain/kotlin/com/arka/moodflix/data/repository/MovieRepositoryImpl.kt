@@ -2,6 +2,7 @@ package com.arka.moodflix.data.repository
 
 import com.arka.moodflix.core.AppError
 import com.arka.moodflix.core.AppResult
+import com.arka.moodflix.core.Logger
 import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.data.remote.ai.AiRouter
 import com.arka.moodflix.data.remote.ai.PromptBuilder
@@ -17,6 +18,7 @@ import com.arka.moodflix.domain.model.MoodQuery
 import com.arka.moodflix.domain.model.OttProvider
 import com.arka.moodflix.domain.repository.MovieRepository
 import com.arka.moodflix.domain.repository.RecommendationState
+import com.arka.moodflix.domain.repository.TmdbLanguageProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -30,7 +32,8 @@ import kotlinx.coroutines.sync.withLock
 class MovieRepositoryImpl(
     private val tmdb: TmdbApi,
     private val aiRouter: AiRouter,
-    private val prefs: UserPreferences
+    private val prefs: UserPreferences,
+    private val languageProvider: TmdbLanguageProvider
 ) : MovieRepository {
 
     // Provider lists rarely change mid-session; avoids refetching every time
@@ -84,9 +87,9 @@ class MovieRepositoryImpl(
             // than an empty screen.
             val fallback = discoverFallback(query)
             if (fallback.isEmpty()) {
-                emit(RecommendationState.Failed(AppError.Unknown("Nothing matched your filters")))
+                emit(RecommendationState.Failed(AppError.NoMatches))
             } else {
-                emit(RecommendationState.FallbackToTmdb(fallback, AppError.ParseFailed()))
+                emit(RecommendationState.FallbackToTmdb(fallback, AppError.ParseFailed))
             }
         } else {
             emit(RecommendationState.Enriched(movies, answeredBy))
@@ -250,7 +253,9 @@ class MovieRepositoryImpl(
         }
         AppResult.Success(movie)
     } catch (e: Exception) {
-        AppResult.Failure(AppError.Unknown(e.message ?: "Could not load this title"))
+        // e.message can embed the request URL (TMDB key is a query param) - never surface it to the UI.
+        Logger.w(TAG, "getMovieDetail failed: ${e.message}")
+        AppResult.Failure(AppError.TitleLoadFailed)
     }
 
     /**
@@ -260,7 +265,8 @@ class MovieRepositoryImpl(
      * an app update.
      */
     override suspend fun getOttProviders(region: String): AppResult<List<OttProvider>> {
-        providerCacheMutex.withLock { providerCache[region] }?.let { return AppResult.Success(it) }
+        val cacheKey = "$region:${languageProvider.current()}"
+        providerCacheMutex.withLock { providerCache[cacheKey] }?.let { return AppResult.Success(it) }
 
         return try {
             val curated = tmdb.getWatchProviders(region).results
@@ -269,10 +275,11 @@ class MovieRepositoryImpl(
                 .take(20)
                 .map { it.toDomain() }
 
-            providerCacheMutex.withLock { providerCache[region] = curated }
+            providerCacheMutex.withLock { providerCache[cacheKey] = curated }
             AppResult.Success(curated)
         } catch (e: Exception) {
-            AppResult.Failure(AppError.Unknown(e.message ?: "Could not load OTT platforms"))
+            Logger.w(TAG, "getOttProviders failed: ${e.message}")
+            AppResult.Failure(AppError.ProvidersLoadFailed)
         }
     }
 
@@ -284,7 +291,7 @@ class MovieRepositoryImpl(
         minRating: Float,
         forceRefresh: Boolean
     ): AppResult<List<Movie>> {
-        val cacheKey = "$releaseFrom|$releaseTo|$limit|${genre.name}|$minRating"
+        val cacheKey = "$releaseFrom|$releaseTo|$limit|${genre.name}|$minRating|${languageProvider.current()}"
         if (!forceRefresh) {
             topMoviesCacheMutex.withLock {
                 topMoviesCache.takeIf { topMoviesCacheKey == cacheKey }
@@ -332,13 +339,14 @@ class MovieRepositoryImpl(
             }
             AppResult.Success(movies)
         } catch (e: Exception) {
-            AppResult.Failure(AppError.Unknown(e.message ?: "Could not load this month's titles"))
+            Logger.w(TAG, "getTopMoviesThisMonth failed: ${e.message}")
+            AppResult.Failure(AppError.MonthlyTitlesLoadFailed)
         }
     }
 
     /** Movies and series merged, rating-sorted - the Search tab covers both media types. */
     override suspend fun searchMovies(query: String, forceRefresh: Boolean): AppResult<List<Movie>> {
-        val cacheKey = query.trim().lowercase()
+        val cacheKey = "${query.trim().lowercase()}:${languageProvider.current()}"
         if (!forceRefresh) {
             searchCacheMutex.withLock { searchCache[cacheKey] }?.let { return AppResult.Success(it) }
         }
@@ -359,7 +367,8 @@ class MovieRepositoryImpl(
             searchCacheMutex.withLock { searchCache[cacheKey] = results }
             AppResult.Success(results)
         } catch (e: Exception) {
-            AppResult.Failure(AppError.Unknown(e.message ?: "Search failed"))
+            Logger.w(TAG, "searchMovies failed: ${e.message}")
+            AppResult.Failure(AppError.SearchFailed)
         }
     }
 
@@ -368,7 +377,7 @@ class MovieRepositoryImpl(
         mediaType: MediaType,
         limit: Int
     ): AppResult<List<Movie>> {
-        val cacheKey = "$tmdbId:${mediaType.name}"
+        val cacheKey = "$tmdbId:${mediaType.name}:${languageProvider.current()}"
         similarCacheMutex.withLock { similarCache[cacheKey] }?.let { return AppResult.Success(it) }
 
         return try {
@@ -381,11 +390,13 @@ class MovieRepositoryImpl(
             similarCacheMutex.withLock { similarCache[cacheKey] = movies }
             AppResult.Success(movies)
         } catch (e: Exception) {
-            AppResult.Failure(AppError.Unknown(e.message ?: "Could not load similar titles"))
+            Logger.w(TAG, "getSimilar failed: ${e.message}")
+            AppResult.Failure(AppError.SimilarLoadFailed)
         }
     }
 
     private companion object {
+        const val TAG = "MovieRepository"
         // TMDB skews slightly lower than IMDb, so allow a little slack.
         const val RATING_TOLERANCE = 0.4f
         // Obscure films with few votes get a pass; the rating is not meaningful yet.

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name is a brand name and stays "MoodFlix" in every locale (see values/strings.xml) -->
+
+    <!-- Shared actions / content descriptions -->
+    <string name="action_cancel">रद्द करें</string>
+    <string name="action_connect">कनेक्ट करें</string>
+    <string name="action_get_a_free_key">मुफ़्त कुंजी प्राप्त करें</string>
+    <string name="action_get_a_key">कुंजी प्राप्त करें</string>
+    <string name="action_log_out">लॉग आउट करें</string>
+    <string name="action_remove">हटाएं</string>
+    <string name="action_replace_key">कुंजी बदलें</string>
+    <string name="action_save">सहेजें</string>
+    <string name="action_try_again">फिर कोशिश करें</string>
+    <string name="cd_add_to_watchlist">वॉचलिस्ट में जोड़ें</string>
+    <string name="cd_back">वापस</string>
+    <string name="cd_clear_search">खोज साफ़ करें</string>
+    <string name="cd_hide_password">पासवर्ड छिपाएं</string>
+    <string name="cd_move_up_fallback">फ़ॉलबैक क्रम में ऊपर ले जाएं</string>
+    <string name="cd_play_trailer">ट्रेलर चलाएं</string>
+    <string name="cd_remove_from_watchlist">वॉचलिस्ट से हटाएं</string>
+    <string name="cd_settings">सेटिंग्स</string>
+    <string name="cd_show_password">पासवर्ड दिखाएं</string>
+    <string name="coach_got_it">समझ गया!</string>
+    <string name="coach_next">आगे →</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_discover">खोजें</string>
+    <string name="nav_search">सर्च</string>
+    <string name="nav_watchlist">वॉचलिस्ट</string>
+
+    <!-- Splash -->
+    <string name="splash_tagline">आपके मूड से मेल खाती फ़िल्में</string>
+
+    <!-- Login -->
+    <string name="login_headline">आज रात आपके मूड के\nमुताबिक सही\nफ़िल्म चुनें।</string>
+    <string name="login_subtitle">आप अभी जैसा महसूस कर रहे हैं, ठीक उसी के हिसाब\nसे चुनी गई फ़िल्में और सीरीज़ देखें।</string>
+    <string name="login_sign_in_with_email">ईमेल से साइन इन करें</string>
+    <string name="login_email_label">ईमेल</string>
+    <string name="login_password_label">पासवर्ड</string>
+    <string name="login_create_account">खाता बनाएं</string>
+    <string name="login_sign_in">साइन इन करें</string>
+    <string name="login_already_have_account">पहले से खाता है? साइन इन करें</string>
+    <string name="login_new_here">नए हैं? खाता बनाएं</string>
+    <string name="login_continue_with_google">Google से जारी रखें</string>
+    <string name="login_error_generic">साइन-इन विफल रहा। फिर कोशिश करें।</string>
+    <string name="login_error_missing_fields">अपना ईमेल और पासवर्ड डालें।</string>
+
+    <!-- Discover -->
+    <string name="discover_coach_connect_ai_title">अपना AI कनेक्ट करें</string>
+    <string name="discover_coach_connect_ai_body">अपनी मुफ़्त Gemini, ChatGPT या Claude कुंजी जोड़ने के लिए यहां टैप करें। MoodFlix आपकी कुंजी का इस्तेमाल करता है — ऐप पर कोई शुल्क नहीं लगता।</string>
+    <string name="discover_coach_pick_mood_title">एक मूड चुनें</string>
+    <string name="discover_coach_pick_mood_body">अभी आप जैसा महसूस कर रहे हैं वो चुनें — AI सिर्फ़ शैली नहीं, बल्कि सच में उससे मेल खाती फ़िल्में और सीरीज़ चुनता है।</string>
+    <string name="discover_headline">आज क्या देखना है?</string>
+    <string name="discover_subheadline">एक मूड चुनें। बाकी हम संभाल लेंगे।</string>
+    <string name="discover_looking_for">आप क्या देखना चाहते हैं</string>
+    <string name="discover_mood">मूड</string>
+    <string name="discover_genre">शैली</string>
+    <string name="discover_genre_no_tv_mapping">%1$s के लिए कोई TV शैली उपलब्ध नहीं है - सीरीज़ के नतीजे शैली से फ़िल्टर नहीं होंगे।</string>
+    <string name="discover_where_do_you_watch">आप कहां देखते हैं?</string>
+    <string name="discover_all_platforms">सभी प्लेटफ़ॉर्म</string>
+    <string name="discover_platforms_selected">केवल %1$d चुने गए प्लेटफ़ॉर्म पर मौजूद टाइटल दिखाए जा रहे हैं</string>
+    <string name="discover_free_text_label">कुछ और बताना चाहते हैं? (वैकल्पिक)</string>
+    <string name="discover_free_text_placeholder">सबटाइटल न हों, 2 घंटे से कम हो, कुछ भी उदास करने वाला न हो</string>
+    <string name="discover_find_me_something">मेरे लिए कुछ ढूंढें</string>
+    <string name="discover_surprise_me">मुझे चौंकाएं</string>
+    <string name="discover_top_movies_of_month">इस महीने की टॉप फ़िल्में</string>
+    <string name="discover_no_provider_title">अभी कोई AI प्रोवाइडर कनेक्ट नहीं है</string>
+    <string name="discover_no_provider_body">आप फिर भी खोज सकते हैं - MoodFlix AI-चुनी हुई फ़िल्मों की जगह TMDB की लोकप्रिय फ़िल्में दिखाएगा।</string>
+    <string name="discover_connect_a_provider">एक प्रोवाइडर कनेक्ट करें</string>
+
+    <!-- Search tab -->
+    <string name="search_title">सर्च</string>
+    <string name="search_placeholder">फ़िल्में खोजें</string>
+    <string name="search_nothing_this_genre">इस महीने इस शैली में कुछ नहीं मिला - कोई और शैली आज़माएं।</string>
+    <string name="search_no_results_for">\"%1$s\" के लिए कोई नतीजा नहीं मिला</string>
+
+    <!-- Watchlist -->
+    <string name="watchlist_title">वॉचलिस्ट</string>
+    <string name="watchlist_empty">आपकी वॉचलिस्ट खाली है।\nयहां सेव करने के लिए किसी भी टाइटल पर बुकमार्क आइकन टैप करें।</string>
+    <string name="watchlist_remove_title">वॉचलिस्ट से हटाएं?</string>
+    <string name="watchlist_remove_body">\"%1$s\" को आपकी वॉचलिस्ट से हटा दिया जाएगा।</string>
+
+    <!-- Detail -->
+    <string name="detail_stream">स्ट्रीम करें</string>
+    <string name="detail_rent">किराए पर लें</string>
+    <string name="detail_buy">खरीदें</string>
+    <string name="detail_see_all_watch_options">सभी देखने के विकल्प देखें</string>
+    <string name="detail_more_like_this">इससे मिलती-जुलती फ़िल्में</string>
+    <string name="detail_see_all">सभी देखें</string>
+    <string name="detail_episodes">%1$d एपिसोड</string>
+    <string name="detail_min_per_episode">~%1$d मिनट/एपिसोड</string>
+    <string name="detail_minutes">%1$d मिनट</string>
+
+    <!-- Similar (full "More like this" grid) -->
+    <string name="similar_title">इससे मिलती-जुलती फ़िल्में</string>
+    <string name="similar_empty">अभी दिखाने के लिए कुछ भी मिलता-जुलता नहीं है।</string>
+
+    <!-- Results -->
+    <string name="results_mood_picks">%1$s के लिए चुनी गई फ़िल्में</string>
+    <string name="results_filtered_to_platforms">%1$d प्लेटफ़ॉर्म तक सीमित</string>
+    <string name="results_reading_your_mood">आपका मूड समझा जा रहा है</string>
+    <string name="results_found_picks">%1$d चुनी गई फ़िल्में मिलीं, जानकारी जुटाई जा रही है</string>
+    <string name="results_tmdb_fallback_note">AI से चुनी फ़िल्में उपलब्ध नहीं थीं, इसलिए ये आपके फ़िल्टर में लोकप्रिय, अच्छी रेटिंग वाली फ़िल्में हैं।</string>
+    <string name="results_curated_by">%1$s द्वारा चुनी गई</string>
+    <string name="results_loading_ad">विज्ञापन लोड हो रहा है</string>
+    <string name="results_show_me_more">मुझे इनसे मिलती-जुलती और दिखाएं</string>
+    <string name="results_no_new_matches">इस बार कोई नया मैच नहीं मिला - कोई अलग मूड, शैली या रेटिंग आज़माएं।</string>
+
+    <!-- Settings -->
+    <string name="settings_title">AI प्रोवाइडर</string>
+    <string name="settings_signout_title">लॉग आउट करें?</string>
+    <string name="settings_signout_body">MoodFlix इस्तेमाल करने के लिए आपको दोबारा Google से साइन इन करना होगा।</string>
+    <string name="settings_keys_local_note">आपकी कुंजियां इसी फ़ोन पर रहती हैं। ये Android Keystore से एन्क्रिप्ट की जाती हैं और कभी भी किसी MoodFlix सर्वर पर नहीं भेजी जातीं, क्योंकि कोई सर्वर है ही नहीं।</string>
+    <string name="settings_fallback_note">एक से ज़्यादा कनेक्ट करें और जब किसी की मुफ़्त सीमा खत्म हो जाए, तो MoodFlix अपने आप दूसरी पर स्विच कर लेगा।</string>
+    <string name="settings_privacy_policy">गोपनीयता नीति</string>
+    <string name="settings_paste_api_key">अपनी API कुंजी पेस्ट करें</string>
+    <string name="settings_provider_connected">%1$s कनेक्ट हो गया</string>
+    <string name="settings_provider_removed">%1$s हटा दिया गया</string>
+    <string name="settings_dark_theme_title">डार्क थीम</string>
+    <string name="settings_dark_theme_on">पूरे ऐप के लिए चालू</string>
+    <string name="settings_dark_theme_off">बंद - लाइट थीम इस्तेमाल हो रही है</string>
+    <string name="settings_language_title">ऐप की भाषा</string>
+    <string name="settings_language_english">अंग्रेज़ी (English)</string>
+    <string name="settings_language_hindi">हिन्दी</string>
+    <string name="account_signed_in">साइन इन है</string>
+    <string name="provider_connected_first">कनेक्टेड · पहले आज़माया जाता है</string>
+    <string name="provider_connected_fallback">कनेक्टेड · फ़ॉलबैक %1$d</string>
+    <string name="provider_not_connected">कनेक्ट नहीं है</string>
+
+    <!-- Movie card -->
+    <string name="movie_card_min_per_episode_short">%1$dमि/एपि</string>
+    <string name="movie_card_min_short">%1$dमि</string>
+    <string name="movie_card_not_streaming">आपके क्षेत्र में स्ट्रीम नहीं हो रही</string>
+
+    <!-- Rating slider -->
+    <string name="rating_slider_minimum_rating">न्यूनतम रेटिंग</string>
+
+    <!-- Moods -->
+    <string name="mood_cozy">आरामदायक</string>
+    <string name="mood_hyped">जोशीला</string>
+    <string name="mood_melancholy">उदास</string>
+    <string name="mood_mind_bending">दिमाग घुमाने वाला</string>
+    <string name="mood_romantic">रोमांटिक</string>
+    <string name="mood_funny">हंसी चाहिए</string>
+    <string name="mood_tense">रोमांचक</string>
+    <string name="mood_inspired">प्रेरणा चाहिए</string>
+
+    <!-- Genres -->
+    <string name="genre_any">कोई भी</string>
+    <string name="genre_action">एक्शन</string>
+    <string name="genre_adventure">एडवेंचर</string>
+    <string name="genre_animation">एनिमेशन</string>
+    <string name="genre_comedy">कॉमेडी</string>
+    <string name="genre_crime">क्राइम</string>
+    <string name="genre_documentary">डॉक्यूमेंट्री</string>
+    <string name="genre_drama">ड्रामा</string>
+    <string name="genre_fantasy">फैंटेसी</string>
+    <string name="genre_horror">हॉरर</string>
+    <string name="genre_mystery">मिस्ट्री</string>
+    <string name="genre_romance">रोमांस</string>
+    <string name="genre_sci_fi">साइ-फ़ाई</string>
+    <string name="genre_thriller">थ्रिलर</string>
+
+    <!-- Media type filter -->
+    <string name="media_filter_movies">फ़िल्में</string>
+    <string name="media_filter_series">सीरीज़</string>
+    <string name="media_filter_both">दोनों</string>
+
+    <!-- Errors -->
+    <string name="error_network">इंटरनेट कनेक्शन नहीं है</string>
+    <string name="error_quota_exceeded">%1$s की सीमा खत्म हो गई</string>
+    <string name="error_invalid_key">%1$s कुंजी अमान्य या समाप्त हो चुकी है</string>
+    <string name="error_no_keys_configured">कोई AI प्रोवाइडर कनेक्ट नहीं है</string>
+    <string name="error_parse_failed">AI का जवाब पढ़ा नहीं जा सका</string>
+    <string name="error_provider_http">%1$s ने %2$d लौटाया</string>
+    <string name="error_no_matches">आपके फ़िल्टर से कुछ मेल नहीं खाया</string>
+    <string name="error_title_load_failed">यह टाइटल लोड नहीं हो सका</string>
+    <string name="error_providers_load_failed">OTT प्लेटफ़ॉर्म लोड नहीं हो सके</string>
+    <string name="error_monthly_titles_load_failed">इस महीने के टाइटल लोड नहीं हो सके</string>
+    <string name="error_search_failed">खोज विफल रही</string>
+    <string name="error_similar_load_failed">मिलती-जुलती फ़िल्में लोड नहीं हो सकीं</string>
+    <string name="error_unknown">कुछ गड़बड़ हो गई</string>
+
+    <!-- Plurals - Hindi grammar doesn't inflect "season" by count, so both
+         quantities read the same aside from the number itself. -->
+    <plurals name="detail_seasons">
+        <item quantity="one">%1$d सीज़न</item>
+        <item quantity="other">%1$d सीज़न</item>
+    </plurals>
+
+    <!-- Reel loading animation lines -->
+    <string-array name="reel_loading_lines">
+        <item>फ़िल्म समीक्षकों से राय ली जा रही है</item>
+        <item>हज़ारों रिव्यू देखे जा रहे हैं</item>
+        <item>पॉपकॉर्न तैयार किया जा रहा है</item>
+        <item>फ़िल्म रील सुलझाई जा रही है</item>
+        <item>IMDb पर सितारे गिने जा रहे हैं</item>
+        <item>असल में क्या स्ट्रीम हो रहा है, जांचा जा रहा है</item>
+        <item>क्रेडिट्स उल्टे पढ़े जा रहे हैं</item>
+        <item>खुद से अंत पर बहस की जा रही है</item>
+    </string-array>
+</resources>

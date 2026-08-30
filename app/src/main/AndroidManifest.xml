@@ -14,11 +14,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.MoodFlix">
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-9247188440103276~1338308374" />
+
+        <!-- Lets AppCompat auto-persist AppCompatDelegate.setApplicationLocales()
+             across process death, so the language toggle doesn't need its own
+             DataStore entry - AppCompat stores and reapplies it on its own. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
 
         <!-- Both Firebase Analytics and AdMob declare this Privacy Sandbox
              property; take AdMob's, which is what actually reads it. -->

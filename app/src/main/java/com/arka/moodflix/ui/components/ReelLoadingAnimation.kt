@@ -30,31 +30,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.arka.moodflix.R
 import kotlinx.coroutines.delay
-
-/**
- * Playful lines shown while the AI call is in flight. Gemini/GPT/Claude can
- * take several seconds, and a static spinner reads as "frozen" past about
- * three of them - a rotating reel plus changing text reads as "working."
- */
-private val loadingLines = listOf(
-    "Consulting the film critics",
-    "Skimming a thousand reviews",
-    "Polishing the popcorn",
-    "Untangling the film reels",
-    "Counting the stars on IMDb",
-    "Checking what's actually streaming",
-    "Reading the credits backwards",
-    "Debating with itself about the ending"
-)
 
 @Composable
 fun ReelLoadingAnimation(
     statusLabel: String,
     modifier: Modifier = Modifier
 ) {
+    // Playful lines shown while the AI call is in flight. Gemini/GPT/Claude can
+    // take several seconds, and a static spinner reads as "frozen" past about
+    // three of them - a rotating reel plus changing text reads as "working."
+    val loadingLines = stringArrayResource(R.array.reel_loading_lines)
+
     val infiniteTransition = rememberInfiniteTransition(label = "reel")
 
     val rotation by infiniteTransition.animateFloat(

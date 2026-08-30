@@ -6,19 +6,30 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arka.moodflix.data.local.UserPreferences
 import com.arka.moodflix.ui.navigation.MoodFlixNavHost
 import com.arka.moodflix.ui.theme.MoodFlixTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var userPreferences: UserPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         setContent {
-            MoodFlixTheme {
+            val darkTheme by userPreferences.darkThemeEnabled
+                .collectAsStateWithLifecycle(initialValue = isSystemInDarkTheme())
+
+            MoodFlixTheme(darkTheme = darkTheme) {
                 MoodFlixNavHost(onOpenUrl = ::openUrl)
             }
         }

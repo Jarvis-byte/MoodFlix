@@ -22,7 +22,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.compose.ui.res.stringResource
+import com.arka.moodflix.R
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -40,6 +41,7 @@ import com.arka.moodflix.ui.discover.DiscoverScreen
 import com.arka.moodflix.ui.results.ResultsScreen
 import com.arka.moodflix.ui.search.SearchScreen
 import com.arka.moodflix.ui.settings.SettingsScreen
+import com.arka.moodflix.ui.similar.SimilarScreen
 import com.arka.moodflix.ui.splash.SplashScreen
 import com.arka.moodflix.ui.watchlist.WatchlistScreen
 
@@ -51,6 +53,7 @@ object Routes {
     const val WATCHLIST = "watchlist"
     const val SETTINGS = "settings"
     const val DETAIL = "detail/{movieId}/{mediaType}"
+    const val SIMILAR = "similar/{movieId}/{mediaType}"
     const val RESULTS = "results/{mood}/{genre}/{minRating}/{freeText}/{providers}/{mediaFilter}"
 
     // A blank freeText segment breaks route matching (double slash), so an
@@ -59,6 +62,8 @@ object Routes {
     private const val NO_PROVIDERS = "none"
 
     fun detail(movieId: Int, mediaType: MediaType) = "detail/$movieId/${mediaType.name}"
+
+    fun similar(movieId: Int, mediaType: MediaType) = "similar/$movieId/${mediaType.name}"
 
     fun results(
         mood: Mood,
@@ -110,7 +115,16 @@ fun MoodFlixNavHost(
                     currentRoute = currentRoute?.destination?.route,
                     onTabSelected = { route ->
                         navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
+                            // Anchored to DISCOVER, not graph.findStartDestination() -
+                            // the graph's actual start destination is SPLASH, which is
+                            // removed from the back stack (inclusive = true) the moment
+                            // it navigates away. popUpTo can't find a removed
+                            // destination, so it silently no-ops and every tab switch
+                            // was pushing a brand-new entry (and a brand-new
+                            // ViewModel) instead of restoring the saved one. DISCOVER
+                            // is the real "home" tab and always stays in the back
+                            // stack once past login, so it's a stable anchor.
+                            popUpTo(Routes.DISCOVER) {
                                 saveState = true
                             }
                             launchSingleTop = true
@@ -167,6 +181,9 @@ fun MoodFlixNavHost(
                     navController.navigate(
                         Routes.results(mood, genre, minRating, freeText, providerIds, mediaFilter)
                     )
+                },
+                onOpenMovie = { id, mediaType ->
+                    navController.navigate(Routes.detail(id, mediaType))
                 }
             )
         }
@@ -232,7 +249,25 @@ fun MoodFlixNavHost(
                     navController.navigate(Routes.detail(id, mediaType))
                 },
                 onPlayTrailer = { key -> onOpenUrl("https://www.youtube.com/watch?v=$key") },
-                onOpenUrl = onOpenUrl
+                onOpenUrl = onOpenUrl,
+                onSeeMoreSimilar = { id, mediaType ->
+                    navController.navigate(Routes.similar(id, mediaType))
+                }
+            )
+        }
+
+        composable(
+            route = Routes.SIMILAR,
+            arguments = listOf(
+                navArgument("movieId") { type = NavType.IntType },
+                navArgument("mediaType") { type = NavType.StringType }
+            )
+        ) {
+            SimilarScreen(
+                onBack = { navController.popBackStack() },
+                onOpenMovie = { id, mediaType ->
+                    navController.navigate(Routes.detail(id, mediaType))
+                }
             )
         }
         }
@@ -249,7 +284,7 @@ private fun MoodFlixBottomBar(
             selected = currentRoute == Routes.DISCOVER,
             onClick = { onTabSelected(Routes.DISCOVER) },
             icon = { Icon(Icons.Filled.Explore, contentDescription = null) },
-            label = { Text("Discover") },
+            label = { Text(stringResource(R.string.nav_discover)) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = MaterialTheme.colorScheme.primary,
                 selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -260,7 +295,7 @@ private fun MoodFlixBottomBar(
             selected = currentRoute == Routes.SEARCH,
             onClick = { onTabSelected(Routes.SEARCH) },
             icon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            label = { Text("Search") },
+            label = { Text(stringResource(R.string.nav_search)) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = MaterialTheme.colorScheme.primary,
                 selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -271,7 +306,7 @@ private fun MoodFlixBottomBar(
             selected = currentRoute == Routes.WATCHLIST,
             onClick = { onTabSelected(Routes.WATCHLIST) },
             icon = { Icon(Icons.Filled.Bookmark, contentDescription = null) },
-            label = { Text("Watchlist") },
+            label = { Text(stringResource(R.string.nav_watchlist)) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = MaterialTheme.colorScheme.primary,
                 selectedTextColor = MaterialTheme.colorScheme.primary,

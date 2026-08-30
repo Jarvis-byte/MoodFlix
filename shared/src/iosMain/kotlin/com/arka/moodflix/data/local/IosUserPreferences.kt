@@ -17,14 +17,17 @@ class IosUserPreferences : UserPreferences {
     private val orderKey = "fallback_order"
     private val countryKey = "watch_country"
     private val introSeenKey = "discover_intro_seen"
+    private val darkThemeKey = "dark_theme_enabled"
 
     private val orderFlow = MutableStateFlow(readOrder())
     private val countryFlow = MutableStateFlow(readCountry())
     private val introSeenFlow = MutableStateFlow(defaults.boolForKey(introSeenKey))
+    private val darkThemeFlow = MutableStateFlow(defaults.objectForKey(darkThemeKey)?.let { defaults.boolForKey(darkThemeKey) } ?: true)
 
     override val fallbackOrder: Flow<List<AiProviderType>> = orderFlow
     override val watchCountry: Flow<String> = countryFlow
     override val discoverIntroSeen: Flow<Boolean> = introSeenFlow
+    override val darkThemeEnabled: Flow<Boolean> = darkThemeFlow
 
     override suspend fun setFallbackOrder(order: List<AiProviderType>) {
         defaults.setObject(order.joinToString(",") { it.name }, orderKey)
@@ -40,6 +43,11 @@ class IosUserPreferences : UserPreferences {
     override suspend fun markDiscoverIntroSeen() {
         defaults.setBool(true, introSeenKey)
         introSeenFlow.value = true
+    }
+
+    override suspend fun setDarkThemeEnabled(enabled: Boolean) {
+        defaults.setBool(enabled, darkThemeKey)
+        darkThemeFlow.value = enabled
     }
 
     private fun readOrder(): List<AiProviderType> =

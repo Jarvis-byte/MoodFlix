@@ -2,6 +2,8 @@ package com.arka.moodflix.core.ads
 
 import android.app.Activity
 import android.content.Context
+import com.arka.moodflix.core.analytics.AnalyticsEvent
+import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.domain.repository.AdsPreferenceRepository
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
@@ -30,7 +32,8 @@ import kotlinx.coroutines.launch
 @Singleton
 class RewardedAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val adsPreferenceRepository: AdsPreferenceRepository
+    private val adsPreferenceRepository: AdsPreferenceRepository,
+    private val analytics: AnalyticsManager
 ) {
 
     // Main.immediate: showOrSkip's callbacks (onAdDismissed, onComplete) must
@@ -87,18 +90,28 @@ class RewardedAdManager @Inject constructor(
             }
 
             rewardedAd = null
+            var rewardEarned = false
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
+                    analytics.log(
+                        if (rewardEarned) {
+                            AnalyticsEvent.RewardedAdCompleted
+                        } else {
+                            AnalyticsEvent.RewardedAdSkippedOrFailed
+                        }
+                    )
                     preload()
                     onComplete()
                 }
 
                 override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                    analytics.log(AnalyticsEvent.RewardedAdSkippedOrFailed)
                     preload()
                     onComplete()
                 }
             }
-            ad.show(activity) { /* reward earned; loadMore() runs on dismiss either way */ }
+            analytics.log(AnalyticsEvent.RewardedAdShown)
+            ad.show(activity) { rewardEarned = true }
         }
     }
 

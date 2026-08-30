@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arka.moodflix.core.AppError
 import com.arka.moodflix.core.AppResult
+import com.arka.moodflix.core.analytics.AnalyticsEvent
+import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.MediaTypeFilter
@@ -67,7 +69,8 @@ data class SearchUiState(
 class SearchViewModel @Inject constructor(
     private val getTopMoviesThisMonth: GetTopMoviesThisMonthUseCase,
     private val searchMovies: SearchMoviesUseCase,
-    private val watchlistRepository: WatchlistRepository
+    private val watchlistRepository: WatchlistRepository,
+    private val analytics: AnalyticsManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -81,6 +84,7 @@ class SearchViewModel @Inject constructor(
     private var filterRefetchJob: Job? = null
 
     init {
+        analytics.log(AnalyticsEvent.SearchScreenOpened)
         viewModelScope.launch { loadBrowseMovies(forceRefresh = false) }
     }
 
@@ -110,7 +114,17 @@ class SearchViewModel @Inject constructor(
     }
 
     fun toggleWatchlist(movie: Movie) {
-        viewModelScope.launch { watchlistRepository.toggle(movie) }
+        viewModelScope.launch {
+            val added = watchlistRepository.toggle(movie)
+            analytics.log(
+                AnalyticsEvent.WatchlistToggled(
+                    tmdbId = movie.tmdbId,
+                    title = movie.title,
+                    mediaType = movie.mediaType.name,
+                    added = added
+                )
+            )
+        }
     }
 
     fun onQueryChange(query: String) {
@@ -149,9 +163,13 @@ class SearchViewModel @Inject constructor(
 
     private suspend fun runSearch(query: String, forceRefresh: Boolean) {
         _uiState.update { it.copy(isSearching = true, error = null) }
+        analytics.log(AnalyticsEvent.SearchTabQuerySubmitted(query.length))
         when (val result = searchMovies(query, forceRefresh)) {
-            is AppResult.Success -> _uiState.update {
-                it.copy(isSearching = false, searchResults = result.data)
+            is AppResult.Success -> {
+                analytics.log(AnalyticsEvent.SearchTabResultsReturned(result.data.size))
+                _uiState.update {
+                    it.copy(isSearching = false, searchResults = result.data)
+                }
             }
             is AppResult.Failure -> _uiState.update {
                 it.copy(isSearching = false, error = result.error)

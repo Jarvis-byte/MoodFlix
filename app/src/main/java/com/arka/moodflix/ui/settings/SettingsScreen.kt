@@ -30,6 +30,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -48,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -55,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.arka.moodflix.R
+import com.arka.moodflix.core.AppLanguage
 import com.arka.moodflix.domain.model.AiProviderType
 import com.arka.moodflix.domain.model.ConnectedProvider
 
@@ -69,6 +74,7 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val providers by viewModel.providers.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val darkThemeEnabled by viewModel.darkThemeEnabled.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showSignOutConfirm by remember { mutableStateOf(false) }
@@ -76,16 +82,18 @@ fun SettingsScreen(
     if (showSignOutConfirm) {
         AlertDialog(
             onDismissRequest = { showSignOutConfirm = false },
-            title = { Text("Log out?") },
-            text = { Text("You'll need to sign in with Google again to use MoodFlix.") },
+            title = { Text(stringResource(R.string.settings_signout_title)) },
+            text = { Text(stringResource(R.string.settings_signout_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     showSignOutConfirm = false
                     viewModel.signOut(context, onSignedOut = onLoggedOut)
-                }) { Text("Log out", color = MaterialTheme.colorScheme.error) }
+                }) {
+                    Text(stringResource(R.string.action_log_out), color = MaterialTheme.colorScheme.error)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showSignOutConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { showSignOutConfirm = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -102,10 +110,13 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             TopAppBar(
-                title = { Text("AI providers") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -133,14 +144,25 @@ fun SettingsScreen(
             }
 
             item {
+                AppearanceCard(
+                    darkThemeEnabled = darkThemeEnabled,
+                    onDarkThemeChanged = viewModel::setDarkThemeEnabled
+                )
+            }
+
+            item {
+                LanguageCard(onLanguageChanged = viewModel::setHindiEnabled)
+            }
+
+            item {
                 Text(
-                    text = "Your keys stay on this phone. They are encrypted with the Android Keystore and never sent to any MoodFlix server, because there isn't one.",
+                    text = stringResource(R.string.settings_keys_local_note),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Connect more than one and MoodFlix falls back automatically when a free quota runs out.",
+                    text = stringResource(R.string.settings_fallback_note),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -164,7 +186,7 @@ fun SettingsScreen(
 
             item {
                 TextButton(onClick = { onOpenUrl(PRIVACY_POLICY_URL) }) {
-                    Text("Privacy Policy")
+                    Text(stringResource(R.string.settings_privacy_policy))
                     Spacer(Modifier.size(4.dp))
                     Icon(
                         Icons.AutoMirrored.Filled.OpenInNew,
@@ -209,9 +231,13 @@ private fun ProviderCard(
                     )
                     Text(
                         text = if (provider.hasKey) {
-                            if (isFirst) "Connected · tried first" else "Connected · fallback ${provider.order + 1}"
+                            if (isFirst) {
+                                stringResource(R.string.provider_connected_first)
+                            } else {
+                                stringResource(R.string.provider_connected_fallback, provider.order + 1)
+                            }
                         } else {
-                            "Not connected"
+                            stringResource(R.string.provider_not_connected)
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = if (provider.hasKey) {
@@ -233,7 +259,7 @@ private fun ProviderCard(
                         IconButton(onClick = onMoveUp) {
                             Icon(
                                 Icons.Default.KeyboardArrowUp,
-                                contentDescription = "Move up in fallback order"
+                                contentDescription = stringResource(R.string.cd_move_up_fallback)
                             )
                         }
                     }
@@ -246,7 +272,7 @@ private fun ProviderCard(
                     value = draftKey,
                     onValueChange = onDraftChanged,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Paste your API key") },
+                    label = { Text(stringResource(R.string.settings_paste_api_key)) },
                     placeholder = { Text(provider.type.keyPrefixHint) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
@@ -264,12 +290,12 @@ private fun ProviderCard(
                         enabled = draftKey.isNotBlank(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Save")
+                        Text(stringResource(R.string.action_save))
                     }
-                    TextButton(onClick = onCancel) { Text("Cancel") }
+                    TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = onGetKey) {
-                        Text("Get a key")
+                        Text(stringResource(R.string.action_get_a_key))
                         Spacer(Modifier.size(4.dp))
                         Icon(
                             Icons.AutoMirrored.Filled.OpenInNew,
@@ -282,17 +308,111 @@ private fun ProviderCard(
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = onStartEditing) {
-                        Text(if (provider.hasKey) "Replace key" else "Connect")
+                        Text(
+                            stringResource(
+                                if (provider.hasKey) R.string.action_replace_key else R.string.action_connect
+                            )
+                        )
                     }
                     if (provider.hasKey) {
                         TextButton(onClick = onRemove) {
-                            Text("Remove", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.action_remove), color = MaterialTheme.colorScheme.error)
                         }
                     } else {
-                        TextButton(onClick = onGetKey) { Text("Get a free key") }
+                        TextButton(onClick = onGetKey) { Text(stringResource(R.string.action_get_a_free_key)) }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AppearanceCard(
+    darkThemeEnabled: Boolean,
+    onDarkThemeChanged: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_dark_theme_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(
+                        if (darkThemeEnabled) {
+                            R.string.settings_dark_theme_on
+                        } else {
+                            R.string.settings_dark_theme_off
+                        }
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = darkThemeEnabled,
+                onCheckedChange = onDarkThemeChanged,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun LanguageCard(onLanguageChanged: (Boolean) -> Unit) {
+    var isHindi by remember { mutableStateOf(AppLanguage.isHindi) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_language_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(
+                        if (isHindi) R.string.settings_language_hindi else R.string.settings_language_english
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = isHindi,
+                onCheckedChange = {
+                    isHindi = it
+                    onLanguageChanged(it)
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            )
         }
     }
 }
@@ -327,7 +447,7 @@ private fun AccountCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = displayName ?: "Signed in",
+                    text = displayName ?: stringResource(R.string.account_signed_in),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -348,7 +468,7 @@ private fun AccountCard(
                     tint = MaterialTheme.colorScheme.error
                 )
                 Spacer(Modifier.size(4.dp))
-                Text("Log out", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.action_log_out), color = MaterialTheme.colorScheme.error)
             }
         }
     }

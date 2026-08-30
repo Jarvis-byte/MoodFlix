@@ -1,8 +1,10 @@
 package com.arka.moodflix.ui.results
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.R
 import com.arka.moodflix.core.analytics.AnalyticsEvent
 import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.core.AppError
@@ -17,6 +19,7 @@ import com.arka.moodflix.domain.repository.WatchlistRepository
 import com.arka.moodflix.domain.usecase.GetRecommendationsUseCase
 import com.arka.moodflix.ui.navigation.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,7 +35,7 @@ import javax.inject.Inject
 
 data class ResultsUiState(
     val mood: Mood,
-    val phase: Phase = Phase.Loading("Reading your mood"),
+    val phase: Phase,
     val results: List<Movie> = emptyList(),
     val answeredBy: String? = null,
     val usingTmdbFallback: Boolean = false,
@@ -51,6 +54,7 @@ class ResultsViewModel @Inject constructor(
     private val getRecommendations: GetRecommendationsUseCase,
     private val watchlistRepository: WatchlistRepository,
     private val analytics: AnalyticsManager,
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -59,7 +63,17 @@ class ResultsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     fun toggleWatchlist(movie: Movie) {
-        viewModelScope.launch { watchlistRepository.toggle(movie) }
+        viewModelScope.launch {
+            val added = watchlistRepository.toggle(movie)
+            analytics.log(
+                AnalyticsEvent.WatchlistToggled(
+                    tmdbId = movie.tmdbId,
+                    title = movie.title,
+                    mediaType = movie.mediaType.name,
+                    added = added
+                )
+            )
+        }
     }
 
     private val mood: Mood = Mood.valueOf(checkNotNull(savedStateHandle["mood"]))
@@ -72,7 +86,11 @@ class ResultsViewModel @Inject constructor(
         MediaTypeFilter.valueOf(checkNotNull(savedStateHandle["mediaFilter"]))
 
     private val _uiState = MutableStateFlow(
-        ResultsUiState(mood = mood, selectedProviderCount = selectedProviderIds.size)
+        ResultsUiState(
+            mood = mood,
+            phase = ResultsUiState.Phase.Loading(appContext.getString(R.string.results_reading_your_mood)),
+            selectedProviderCount = selectedProviderIds.size
+        )
     )
     val uiState: StateFlow<ResultsUiState> = _uiState.asStateFlow()
 
@@ -115,7 +133,9 @@ class ResultsViewModel @Inject constructor(
         _uiState.update { current ->
             when (state) {
                 RecommendationState.AskingAi -> current.copy(
-                    phase = ResultsUiState.Phase.Loading("Reading your mood"),
+                    phase = ResultsUiState.Phase.Loading(
+                        appContext.getString(R.string.results_reading_your_mood)
+                    ),
                     error = null,
                     message = null,
                     usingTmdbFallback = false,
@@ -124,7 +144,7 @@ class ResultsViewModel @Inject constructor(
 
                 is RecommendationState.AiResponded -> current.copy(
                     phase = ResultsUiState.Phase.Loading(
-                        "Found ${state.titleCount} picks, looking them up"
+                        appContext.getString(R.string.results_found_picks, state.titleCount)
                     ),
                     answeredBy = state.answeredBy
                 )
@@ -183,7 +203,7 @@ class ResultsViewModel @Inject constructor(
 
     private fun noNewResultsMessage(append: Boolean, previousSize: Int, mergedSize: Int): String? =
         if (append && mergedSize == previousSize) {
-            "No new matches this time - try a different mood, genre, or rating."
+            appContext.getString(R.string.results_no_new_matches)
         } else {
             null
         }

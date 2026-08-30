@@ -19,12 +19,14 @@ class RoomWatchlistRepository(
     override fun observeIsSaved(tmdbId: Int, mediaType: MediaType): Flow<Boolean> =
         dao.observeIsSaved("$tmdbId:${mediaType.name}")
 
-    override suspend fun toggle(movie: Movie) {
+    override suspend fun toggle(movie: Movie): Boolean {
         val id = movie.watchlistId
-        if (dao.exists(id)) {
+        return if (dao.exists(id)) {
             dao.delete(id)
+            false
         } else {
             dao.insert(movie.toEntity(id))
+            true
         }
     }
 

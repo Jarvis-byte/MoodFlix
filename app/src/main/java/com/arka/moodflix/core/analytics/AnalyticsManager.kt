@@ -66,16 +66,73 @@ class AnalyticsManager @Inject constructor() {
                     putString("provider", event.provider)
                 })
 
-            AnalyticsEvent.LoginSucceeded ->
+            is AnalyticsEvent.LoginSucceeded ->
                 fa.logEvent(FirebaseAnalytics.Event.LOGIN, bundle {
-                    putString(FirebaseAnalytics.Param.METHOD, "google")
+                    putString(FirebaseAnalytics.Param.METHOD, event.method)
                 })
 
-            AnalyticsEvent.LoginFailed ->
-                fa.logEvent("login_failed", null)
+            is AnalyticsEvent.LoginFailed ->
+                fa.logEvent("login_failed", bundle {
+                    putString(FirebaseAnalytics.Param.METHOD, event.method)
+                })
 
             AnalyticsEvent.LoggedOut ->
                 fa.logEvent("logged_out", null)
+
+            is AnalyticsEvent.WatchlistToggled ->
+                fa.logEvent(
+                    if (event.added) "watchlist_added" else "watchlist_removed",
+                    bundle {
+                        putString(FirebaseAnalytics.Param.ITEM_ID, event.tmdbId.toString())
+                        putString(FirebaseAnalytics.Param.ITEM_NAME, event.title.take(100))
+                        putString(FirebaseAnalytics.Param.CONTENT_TYPE, event.mediaType)
+                    }
+                )
+
+            AnalyticsEvent.WatchlistScreenOpened ->
+                fa.logEvent("watchlist_opened", null)
+
+            AnalyticsEvent.SearchScreenOpened ->
+                fa.logEvent("search_tab_opened", null)
+
+            is AnalyticsEvent.SearchTabQuerySubmitted ->
+                fa.logEvent(FirebaseAnalytics.Event.SEARCH, bundle {
+                    putInt("query_length", event.queryLength)
+                })
+
+            is AnalyticsEvent.SearchTabResultsReturned ->
+                fa.logEvent("search_tab_results_returned", bundle {
+                    putInt("result_count", event.resultCount)
+                })
+
+            is AnalyticsEvent.TopMoviesBannerTapped ->
+                fa.logEvent("top_movies_banner_tapped", bundle {
+                    putString(FirebaseAnalytics.Param.ITEM_ID, event.tmdbId.toString())
+                })
+
+            is AnalyticsEvent.SimilarSeeAllTapped ->
+                fa.logEvent("similar_see_all_tapped", bundle {
+                    putString(FirebaseAnalytics.Param.ITEM_ID, event.tmdbId.toString())
+                })
+
+            AnalyticsEvent.RewardedAdShown ->
+                fa.logEvent("rewarded_ad_shown", null)
+
+            AnalyticsEvent.RewardedAdCompleted ->
+                fa.logEvent("rewarded_ad_completed", null)
+
+            AnalyticsEvent.RewardedAdSkippedOrFailed ->
+                fa.logEvent("rewarded_ad_skipped_or_failed", null)
+
+            is AnalyticsEvent.DarkThemeToggled ->
+                fa.logEvent("dark_theme_toggled", bundle {
+                    putString("enabled", event.enabled.toString())
+                })
+
+            is AnalyticsEvent.LanguageToggled ->
+                fa.logEvent("language_toggled", bundle {
+                    putString("language", event.language)
+                })
         }
     }
 

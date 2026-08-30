@@ -24,10 +24,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arka.moodflix.R
 import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.watchlistId
@@ -45,19 +47,19 @@ fun WatchlistScreen(
     pendingRemoval?.let { movie ->
         AlertDialog(
             onDismissRequest = { pendingRemoval = null },
-            title = { Text("Remove from watchlist?") },
-            text = { Text("\"${movie.title}\" will be removed from your watchlist.") },
+            title = { Text(stringResource(R.string.watchlist_remove_title)) },
+            text = { Text(stringResource(R.string.watchlist_remove_body, movie.title)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.remove(movie)
                     pendingRemoval = null
                 }) {
-                    Text("Remove")
+                    Text(stringResource(R.string.action_remove))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { pendingRemoval = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -69,7 +71,7 @@ fun WatchlistScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Watchlist",
+                        text = stringResource(R.string.watchlist_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -95,7 +97,7 @@ fun WatchlistScreen(
 
                 watchlist!!.isEmpty() -> {
                     Text(
-                        text = "Your watchlist is empty.\nTap the bookmark icon on any title to save it here.",
+                        text = stringResource(R.string.watchlist_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

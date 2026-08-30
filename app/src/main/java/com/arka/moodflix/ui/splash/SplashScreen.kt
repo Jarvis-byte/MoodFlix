@@ -33,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.arka.moodflix.R
 import com.arka.moodflix.ui.theme.Amber400
 import com.arka.moodflix.ui.theme.Ink900
 import com.arka.moodflix.ui.theme.Muted
@@ -152,7 +154,7 @@ fun SplashScreen(
             Spacer(Modifier.height(10.dp))
 
             Text(
-                text = "Movies that match your mood",
+                text = stringResource(R.string.splash_tagline),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Muted,
                 modifier = Modifier.graphicsLayer { alpha = textAlpha }

@@ -3,12 +3,14 @@ package com.arka.moodflix.ui.auth
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.R
 import com.arka.moodflix.core.analytics.AnalyticsEvent
 import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.data.remote.config.FirebaseTmdbKeyProvider
 import com.arka.moodflix.domain.model.User
 import com.arka.moodflix.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +27,8 @@ data class LoginUiState(
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val tmdbKeyProvider: FirebaseTmdbKeyProvider,
-    private val analytics: AnalyticsManager
+    private val analytics: AnalyticsManager,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -42,16 +45,16 @@ class LoginViewModel @Inject constructor(
             authRepository.signInWithGoogle(context)
                 .onSuccess {
                     tmdbKeyProvider.refresh()
-                    analytics.log(AnalyticsEvent.LoginSucceeded)
+                    analytics.log(AnalyticsEvent.LoginSucceeded("google"))
                     _uiState.update { it.copy(isSigningIn = false) }
                     onSuccess()
                 }
                 .onFailure { error ->
-                    analytics.log(AnalyticsEvent.LoginFailed)
+                    analytics.log(AnalyticsEvent.LoginFailed("google"))
                     _uiState.update {
                         it.copy(
                             isSigningIn = false,
-                            error = error.message ?: "Sign-in failed. Try again."
+                            error = error.message ?: appContext.getString(R.string.login_error_generic)
                         )
                     }
                 }
@@ -59,20 +62,25 @@ class LoginViewModel @Inject constructor(
     }
 
     fun signInWithEmail(email: String, password: String, onSuccess: () -> Unit) =
-        submitEmailAuth(email, password, onSuccess) { authRepository.signInWithEmail(it, password) }
+        submitEmailAuth(email, password, "email_signin", onSuccess) {
+            authRepository.signInWithEmail(it, password)
+        }
 
     fun signUpWithEmail(email: String, password: String, onSuccess: () -> Unit) =
-        submitEmailAuth(email, password, onSuccess) { authRepository.signUpWithEmail(it, password) }
+        submitEmailAuth(email, password, "email_signup", onSuccess) {
+            authRepository.signUpWithEmail(it, password)
+        }
 
     private fun submitEmailAuth(
         email: String,
         password: String,
+        method: String,
         onSuccess: () -> Unit,
         authCall: suspend (email: String) -> Result<User>
     ) {
         if (_uiState.value.isSigningIn) return
         if (email.isBlank() || password.isBlank()) {
-            _uiState.update { it.copy(error = "Enter your email and password.") }
+            _uiState.update { it.copy(error = appContext.getString(R.string.login_error_missing_fields)) }
             return
         }
         _uiState.update { it.copy(isSigningIn = true, error = null) }
@@ -81,16 +89,16 @@ class LoginViewModel @Inject constructor(
             authCall(email.trim())
                 .onSuccess {
                     tmdbKeyProvider.refresh()
-                    analytics.log(AnalyticsEvent.LoginSucceeded)
+                    analytics.log(AnalyticsEvent.LoginSucceeded(method))
                     _uiState.update { it.copy(isSigningIn = false) }
                     onSuccess()
                 }
                 .onFailure { error ->
-                    analytics.log(AnalyticsEvent.LoginFailed)
+                    analytics.log(AnalyticsEvent.LoginFailed(method))
                     _uiState.update {
                         it.copy(
                             isSigningIn = false,
-                            error = error.message ?: "Sign-in failed. Try again."
+                            error = error.message ?: appContext.getString(R.string.login_error_generic)
                         )
                     }
                 }

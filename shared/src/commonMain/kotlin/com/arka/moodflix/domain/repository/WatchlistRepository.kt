@@ -14,7 +14,9 @@ import kotlinx.coroutines.flow.Flow
 interface WatchlistRepository {
     fun observeWatchlist(): Flow<List<Movie>>
     fun observeIsSaved(tmdbId: Int, mediaType: MediaType): Flow<Boolean>
-    suspend fun toggle(movie: Movie)
+
+    /** @return true if [movie] was added, false if it was already saved and got removed. */
+    suspend fun toggle(movie: Movie): Boolean
 
     /** Wipes the on-device watchlist - called on sign-out so the next signed-in account starts clean. */
     suspend fun clearAll()

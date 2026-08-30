@@ -26,9 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.arka.moodflix.R
 import com.arka.moodflix.domain.model.Movie
 
 /**
@@ -71,7 +73,9 @@ fun PosterGridCard(
                 ) {
                     Icon(
                         imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                        contentDescription = if (isSaved) "Remove from watchlist" else "Add to watchlist",
+                        contentDescription = stringResource(
+                            if (isSaved) R.string.cd_remove_from_watchlist else R.string.cd_add_to_watchlist
+                        ),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )

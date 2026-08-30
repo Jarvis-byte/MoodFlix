@@ -3,6 +3,8 @@ package com.arka.moodflix.ui.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arka.moodflix.R
+import com.arka.moodflix.core.AppLanguage
 import com.arka.moodflix.core.analytics.AnalyticsEvent
 import com.arka.moodflix.core.analytics.AnalyticsManager
 import com.arka.moodflix.data.local.UserPreferences
@@ -13,6 +15,7 @@ import com.arka.moodflix.domain.repository.AiKeyRepository
 import com.arka.moodflix.domain.repository.AuthRepository
 import com.arka.moodflix.domain.repository.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +47,8 @@ class SettingsViewModel @Inject constructor(
     private val prefs: UserPreferences,
     private val authRepository: AuthRepository,
     private val watchlistRepository: WatchlistRepository,
-    private val analytics: AnalyticsManager
+    private val analytics: AnalyticsManager,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -57,6 +61,19 @@ class SettingsViewModel @Inject constructor(
 
     val watchCountry: StateFlow<String> = prefs.watchCountry
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "IN")
+
+    val darkThemeEnabled: StateFlow<Boolean> = prefs.darkThemeEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setDarkThemeEnabled(enabled: Boolean) {
+        analytics.log(AnalyticsEvent.DarkThemeToggled(enabled))
+        viewModelScope.launch { prefs.setDarkThemeEnabled(enabled) }
+    }
+
+    fun setHindiEnabled(enabled: Boolean) {
+        analytics.log(AnalyticsEvent.LanguageToggled(if (enabled) "hi" else "en"))
+        AppLanguage.setHindi(enabled)
+    }
 
     fun onEvent(event: SettingsEvent) {
         when (event) {
@@ -81,7 +98,7 @@ class SettingsViewModel @Inject constructor(
                         it.copy(
                             editingProvider = null,
                             draftKey = "",
-                            message = "${type.displayName} connected"
+                            message = appContext.getString(R.string.settings_provider_connected, type.displayName)
                         )
                     }
                 }
@@ -90,7 +107,11 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.RemoveKey -> viewModelScope.launch {
                 keyRepository.removeKey(event.type)
                 analytics.log(AnalyticsEvent.AiProviderRemoved(event.type.displayName))
-                _uiState.update { it.copy(message = "${event.type.displayName} removed") }
+                _uiState.update {
+                    it.copy(
+                        message = appContext.getString(R.string.settings_provider_removed, event.type.displayName)
+                    )
+                }
             }
 
             is SettingsEvent.MoveUp -> viewModelScope.launch {

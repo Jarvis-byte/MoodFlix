@@ -29,10 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.arka.moodflix.R
 import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.Movie
 import com.arka.moodflix.domain.model.ProviderType
@@ -81,7 +84,7 @@ fun MovieCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Play trailer",
+                            contentDescription = stringResource(R.string.cd_play_trailer),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
                         )
@@ -100,7 +103,9 @@ fun MovieCard(
                     ) {
                         Icon(
                             imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                            contentDescription = if (isSaved) "Remove from watchlist" else "Add to watchlist",
+                            contentDescription = stringResource(
+                                if (isSaved) R.string.cd_remove_from_watchlist else R.string.cd_add_to_watchlist
+                            ),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -143,9 +148,13 @@ fun MovieCard(
                         )
                     }
                     movie.runtimeMinutes?.let {
-                        val suffix = if (movie.mediaType == MediaType.SERIES) "m/ep" else "m"
+                        val runtimeText = if (movie.mediaType == MediaType.SERIES) {
+                            stringResource(R.string.movie_card_min_per_episode_short, it)
+                        } else {
+                            stringResource(R.string.movie_card_min_short, it)
+                        }
                         Text(
-                            text = "  ·  ${it}$suffix",
+                            text = "  ·  $runtimeText",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -153,7 +162,7 @@ fun MovieCard(
                     if (movie.mediaType == MediaType.SERIES) {
                         movie.seasonCount?.let { seasons ->
                             Text(
-                                text = "  ·  $seasons season${if (seasons == 1) "" else "s"}",
+                                text = "  ·  " + pluralStringResource(R.plurals.detail_seasons, seasons, seasons),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -191,7 +200,7 @@ fun MovieCard(
                     }
                 } else {
                     Text(
-                        text = "Not streaming in your region",
+                        text = stringResource(R.string.movie_card_not_streaming),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

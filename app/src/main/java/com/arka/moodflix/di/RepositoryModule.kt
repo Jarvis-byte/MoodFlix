@@ -10,6 +10,7 @@ import com.arka.moodflix.data.remote.tmdb.TmdbApi
 import com.arka.moodflix.data.repository.MovieRepositoryImpl
 import com.arka.moodflix.domain.repository.AiKeyRepository
 import com.arka.moodflix.domain.repository.MovieRepository
+import com.arka.moodflix.domain.repository.TmdbLanguageProvider
 import dagger.Module
 import dagger.Provides
 import dagger.multibindings.IntoSet
@@ -33,8 +34,9 @@ object RepositoryModule {
     fun provideMovieRepository(
         tmdb: TmdbApi,
         aiRouter: AiRouter,
-        prefs: UserPreferences
-    ): MovieRepository = MovieRepositoryImpl(tmdb, aiRouter, prefs)
+        prefs: UserPreferences,
+        languageProvider: TmdbLanguageProvider
+    ): MovieRepository = MovieRepositoryImpl(tmdb, aiRouter, prefs, languageProvider)
 
     @Provides
     @Singleton

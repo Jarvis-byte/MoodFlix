@@ -65,7 +65,23 @@ class DetailViewModel @Inject constructor(
     }
 
     fun toggleWatchlist(movie: Movie) {
-        viewModelScope.launch { watchlistRepository.toggle(movie) }
+        viewModelScope.launch {
+            val added = watchlistRepository.toggle(movie)
+            analytics.log(
+                AnalyticsEvent.WatchlistToggled(
+                    tmdbId = movie.tmdbId,
+                    title = movie.title,
+                    mediaType = movie.mediaType.name,
+                    added = added
+                )
+            )
+        }
+    }
+
+    fun logSeeMoreSimilarTapped() {
+        _uiState.value.movie?.let { movie ->
+            analytics.log(AnalyticsEvent.SimilarSeeAllTapped(movie.tmdbId))
+        }
     }
 
     fun load() {

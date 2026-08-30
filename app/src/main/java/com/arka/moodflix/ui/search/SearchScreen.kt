@@ -32,11 +32,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arka.moodflix.R
+import com.arka.moodflix.core.localizedLabel
+import com.arka.moodflix.core.localizedMessage
 import com.arka.moodflix.domain.model.Genre
 import com.arka.moodflix.domain.model.MediaType
 import com.arka.moodflix.domain.model.MediaTypeFilter
@@ -59,7 +63,7 @@ fun SearchScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Search",
+                        text = stringResource(R.string.search_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -108,7 +112,7 @@ fun SearchScreen(
 
                     state.error != null && state.displayedMovies.isEmpty() -> {
                         Text(
-                            text = state.error!!.message,
+                            text = state.error!!.localizedMessage(),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
@@ -121,9 +125,9 @@ fun SearchScreen(
                     state.displayedMovies.isEmpty() -> {
                         Text(
                             text = if (state.query.isBlank()) {
-                                "Nothing matches this genre this month - try a different one."
+                                stringResource(R.string.search_nothing_this_genre)
                             } else {
-                                "No results found for \"${state.query}\""
+                                stringResource(R.string.search_no_results_for, state.query)
                             },
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -170,7 +174,7 @@ private fun MediaFilterRow(
     ) {
         MediaTypeFilter.entries.forEach { filter ->
             MoodChip(
-                label = filter.label,
+                label = filter.localizedLabel(),
                 selected = selected == filter,
                 onClick = { onSelect(filter) },
                 modifier = Modifier.weight(1f)
@@ -194,7 +198,7 @@ private fun GenreFilterRow(
     ) {
         Genre.entries.forEach { genre ->
             MoodChip(
-                label = genre.label,
+                label = genre.localizedLabel(),
                 selected = selected == genre,
                 onClick = { onSelect(genre) }
             )
@@ -213,7 +217,7 @@ private fun SearchBar(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
-        placeholder = { Text("Search movies") },
+        placeholder = { Text(stringResource(R.string.search_placeholder)) },
         singleLine = true,
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = null)
@@ -221,7 +225,7 @@ private fun SearchBar(
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear_search))
                 }
             }
         },
