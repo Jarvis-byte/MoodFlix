@@ -13,7 +13,6 @@ import com.arka.moodflix.domain.model.ConnectedProvider
 import com.arka.moodflix.domain.model.User
 import com.arka.moodflix.domain.repository.AiKeyRepository
 import com.arka.moodflix.domain.repository.AuthRepository
-import com.arka.moodflix.domain.repository.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +45,6 @@ class SettingsViewModel @Inject constructor(
     private val keyRepository: AiKeyRepository,
     private val prefs: UserPreferences,
     private val authRepository: AuthRepository,
-    private val watchlistRepository: WatchlistRepository,
     private val analytics: AnalyticsManager,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
@@ -136,8 +134,10 @@ class SettingsViewModel @Inject constructor(
 
     fun signOut(context: Context, onSignedOut: () -> Unit) {
         viewModelScope.launch {
+            // No local watchlist to wipe anymore - it lives in Firestore under
+            // the account's own uid, so signing out just stops observing it;
+            // the next sign-in (same or different account) sees its own data.
             authRepository.signOut(context)
-            watchlistRepository.clearAll()
             analytics.log(AnalyticsEvent.LoggedOut)
             onSignedOut()
         }
