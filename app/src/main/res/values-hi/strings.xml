@@ -105,7 +105,13 @@
     <string name="results_curated_by">%1$s द्वारा चुनी गई</string>
     <string name="results_loading_ad">विज्ञापन लोड हो रहा है</string>
     <string name="results_show_me_more">मुझे इनसे मिलती-जुलती और दिखाएं</string>
+    <string name="results_ad_closed_early">और सिफ़ारिशें पाने के लिए पूरा विज्ञापन देखें</string>
     <string name="results_no_new_matches">इस बार कोई नया मैच नहीं मिला - कोई अलग मूड, शैली या रेटिंग आज़माएं।</string>
+    <string name="results_ai_failed_dialog_title">AI से चुनी फ़िल्में उपलब्ध नहीं</string>
+    <string name="results_ai_failed_dialog_body">हम किसी भी जुड़े हुए AI प्रोवाइडर तक नहीं पहुंच सके। क्या आप इसके बजाय TMDB की लोकप्रिय, अच्छी रेटिंग वाली फ़िल्में देखना चाहेंगे?</string>
+    <string name="results_ai_failed_dialog_confirm">TMDB फ़िल्में देखें</string>
+    <string name="results_ai_failed_dialog_dismiss">रद्द करें</string>
+    <string name="results_tmdb_fallback_loading">TMDB से लोकप्रिय फ़िल्में खोजी जा रही हैं</string>
 
     <!-- Settings -->
     <string name="settings_title">AI प्रोवाइडर</string>

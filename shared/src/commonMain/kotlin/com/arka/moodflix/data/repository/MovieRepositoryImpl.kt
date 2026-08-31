@@ -62,14 +62,9 @@ class MovieRepositoryImpl(
             is AppResult.Success -> result.data
             is AppResult.Failure -> {
                 // No provider worked (none connected, all out of quota, or all
-                // offline). Rather than a dead end, fall back to a straight
-                // TMDB discover call filtered by the same genre/rating/OTTs/media type.
-                val fallback = discoverFallback(query)
-                if (fallback.isEmpty()) {
-                    emit(RecommendationState.Failed(result.error))
-                } else {
-                    emit(RecommendationState.FallbackToTmdb(fallback, result.error))
-                }
+                // offline). Let the UI ask the user before switching to a
+                // straight TMDB discover call instead of silently doing it.
+                emit(RecommendationState.AiFailed(result.error))
                 return@flow
             }
         }
@@ -82,19 +77,15 @@ class MovieRepositoryImpl(
 
         if (movies.isEmpty()) {
             // Either a fully hallucinated list, or every real match was
-            // filtered out by the OTT selection. Either way, TMDB discover
-            // (which respects the same filters) is a better landing spot
-            // than an empty screen.
-            val fallback = discoverFallback(query)
-            if (fallback.isEmpty()) {
-                emit(RecommendationState.Failed(AppError.NoMatches))
-            } else {
-                emit(RecommendationState.FallbackToTmdb(fallback, AppError.ParseFailed))
-            }
+            // filtered out by the OTT selection. Ask before falling back to
+            // plain TMDB discover, same as an outright AI failure.
+            emit(RecommendationState.AiFailed(AppError.ParseFailed))
         } else {
             emit(RecommendationState.Enriched(movies, answeredBy))
         }
     }.flowOn(Dispatchers.Default)
+
+    override suspend fun fallbackToTmdb(query: MoodQuery): List<Movie> = discoverFallback(query)
 
     /**
      * Pure TMDB path: no mood reasoning, just "popular, well-rated titles in

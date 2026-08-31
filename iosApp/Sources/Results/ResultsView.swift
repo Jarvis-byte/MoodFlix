@@ -21,8 +21,10 @@ struct ResultsView: View {
                 statusView("\(by) suggested \(count) titles - looking them up on TMDB...")
             case .enriched(let movies, let by):
                 movieList(movies, caption: "Curated by \(by)")
-            case .fallback(let movies, let reason):
-                movieList(movies, caption: "AI unavailable (\(reason)) - showing popular TMDB picks")
+            case .awaitingTmdbFallback:
+                statusView("AI picks unavailable")
+            case .fallback(let movies):
+                movieList(movies, caption: "AI unavailable - showing popular TMDB picks")
             case .failed(let message):
                 statusView("Couldn't find anything: \(message)")
             }
@@ -31,6 +33,21 @@ struct ResultsView: View {
         .navigationTitle("Results")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { viewModel.run(query: query) }
+        .alert(
+            "AI picks unavailable",
+            isPresented: Binding(
+                get: {
+                    if case .awaitingTmdbFallback = viewModel.phase { return true }
+                    return false
+                },
+                set: { _ in }
+            )
+        ) {
+            Button("Use TMDB picks") { viewModel.confirmTmdbFallback() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("We couldn't reach any connected AI provider. Would you like popular, well-rated picks from TMDB instead?")
+        }
     }
 
     private func statusView(_ message: String) -> some View {

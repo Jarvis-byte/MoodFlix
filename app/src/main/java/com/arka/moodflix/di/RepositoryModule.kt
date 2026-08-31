@@ -5,6 +5,7 @@ import com.arka.moodflix.data.remote.ai.AiProviderClient
 import com.arka.moodflix.data.remote.ai.AiRouter
 import com.arka.moodflix.data.remote.ai.AnthropicClient
 import com.arka.moodflix.data.remote.ai.GeminiClient
+import com.arka.moodflix.data.remote.ai.GroqClient
 import com.arka.moodflix.data.remote.ai.OpenAiClient
 import com.arka.moodflix.data.remote.tmdb.TmdbApi
 import com.arka.moodflix.data.repository.MovieRepositoryImpl
@@ -58,4 +59,8 @@ object RepositoryModule {
     @Provides
     @IntoSet
     fun provideAnthropic(client: HttpClient): AiProviderClient = AnthropicClient(client)
+
+    @Provides
+    @IntoSet
+    fun provideGroq(client: HttpClient): AiProviderClient = GroqClient(client)
 }

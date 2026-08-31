@@ -17,6 +17,12 @@ interface MovieRepository {
     fun recommend(query: MoodQuery): Flow<RecommendationState>
 
     /**
+     * Runs only once the user has explicitly agreed, after [RecommendationState.AiFailed],
+     * to fall back to a plain TMDB discover call (no per-movie mood reasoning).
+     */
+    suspend fun fallbackToTmdb(query: MoodQuery): List<Movie>
+
+    /**
      * [mediaType] is required because TMDB movie ids and TV ids are separate
      * spaces - the same numeric id can point to two unrelated titles.
      */
@@ -57,12 +63,11 @@ sealed interface RecommendationState {
     data class Enriched(val movies: List<Movie>, val answeredBy: String) : RecommendationState
 
     /**
-     * Every connected AI provider failed (or none are connected), so results
-     * came straight from TMDB's popularity/rating filters instead. There's no
-     * per-movie mood reasoning in this mode - that part genuinely needs the AI.
+     * Every connected AI provider failed (or none are connected). The UI
+     * should ask the user before silently switching to the TMDB-only path
+     * (no per-movie mood reasoning) via [MovieRepository.fallbackToTmdb].
      */
-    data class FallbackToTmdb(val movies: List<Movie>, val reason: com.arka.moodflix.core.AppError) :
-        RecommendationState
+    data class AiFailed(val reason: com.arka.moodflix.core.AppError) : RecommendationState
 
     data class Failed(val error: com.arka.moodflix.core.AppError) : RecommendationState
 }

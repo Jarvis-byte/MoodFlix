@@ -21,9 +21,15 @@ import kotlinx.coroutines.launch
 
 /**
  * Loads a rewarded interstitial ad ahead of time and shows it on demand.
- * The ad's own countdown/close UI is Google's - once it dismisses (watched
- * in full, skipped, or failed to show), [showOrSkip] hands control back to
- * the caller so it can proceed regardless of outcome.
+ * The ad's own countdown/close UI is Google's - once it dismisses, [showOrSkip]
+ * hands control back to the caller with whether the reward was actually
+ * earned, so the caller can gate what the reward unlocks on that instead of
+ * proceeding unconditionally.
+ *
+ * A technical failure (no ad ready yet, or the ad failing to render) is
+ * *not* the user's fault and reports as earned=true so it doesn't block
+ * them - only actually watching the ad and closing it early counts as
+ * declining the reward.
  *
  * Whether ads run at all is gated per-user by [AdsPreferenceRepository]
  * (backed by Firestore), so a specific user's ads can be turned off from
@@ -72,20 +78,23 @@ class RewardedAdManager @Inject constructor(
     }
 
     /**
-     * Shows the ad if the user's flag allows it and one is ready; otherwise
-     * skips straight to [onComplete] rather than blocking the user.
+     * Shows the ad if the user's flag allows it and one is ready. [onResult]
+     * receives whether the reward was earned - false only when an ad was
+     * actually shown and the user closed it before it finished; every other
+     * path (ads disabled for this user, no ad ready, ad failed to render)
+     * reports true so a technical hiccup never blocks the user.
      */
-    fun showOrSkip(activity: Activity, onComplete: () -> Unit) {
+    fun showOrSkip(activity: Activity, onResult: (rewardEarned: Boolean) -> Unit) {
         scope.launch {
             if (!adsPreferenceRepository.isAdsEnabledForCurrentUser()) {
-                onComplete()
+                onResult(true)
                 return@launch
             }
 
             val ad = rewardedAd
             if (ad == null) {
                 preload()
-                onComplete()
+                onResult(true)
                 return@launch
             }
 
@@ -101,13 +110,13 @@ class RewardedAdManager @Inject constructor(
                         }
                     )
                     preload()
-                    onComplete()
+                    onResult(rewardEarned)
                 }
 
                 override fun onAdFailedToShowFullScreenContent(error: AdError) {
                     analytics.log(AnalyticsEvent.RewardedAdSkippedOrFailed)
                     preload()
-                    onComplete()
+                    onResult(true)
                 }
             }
             analytics.log(AnalyticsEvent.RewardedAdShown)

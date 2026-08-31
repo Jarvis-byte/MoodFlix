@@ -19,6 +19,11 @@ enum class AiProviderType(
         displayName = "Anthropic Claude",
         keyConsoleUrl = "https://console.anthropic.com/settings/keys",
         keyPrefixHint = "sk-ant-..."
+    ),
+    GROQ(
+        displayName = "Groq",
+        keyConsoleUrl = "https://console.groq.com/keys",
+        keyPrefixHint = "gsk_..."
     );
 }
 

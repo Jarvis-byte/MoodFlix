@@ -105,7 +105,13 @@
     <string name="results_curated_by">Curated by %1$s</string>
     <string name="results_loading_ad">Loading ad</string>
     <string name="results_show_me_more">Show me more like these</string>
+    <string name="results_ad_closed_early">Watch the full ad to get more recommendations</string>
     <string name="results_no_new_matches">No new matches this time - try a different mood, genre, or rating.</string>
+    <string name="results_ai_failed_dialog_title">AI picks unavailable</string>
+    <string name="results_ai_failed_dialog_body">We couldn\'t reach any connected AI provider. Would you like popular, well-rated picks from TMDB instead?</string>
+    <string name="results_ai_failed_dialog_confirm">Use TMDB picks</string>
+    <string name="results_ai_failed_dialog_dismiss">Cancel</string>
+    <string name="results_tmdb_fallback_loading">Finding popular picks from TMDB</string>
 
     <!-- Settings -->
     <string name="settings_title">AI providers</string>

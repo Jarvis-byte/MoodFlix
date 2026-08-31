@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -82,6 +83,24 @@ fun ResultsScreen(
             snackbarHost.showSnackbar(it)
             viewModel.dismissMessage()
         }
+    }
+
+    if (state.showTmdbFallbackDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissTmdbFallbackDialog,
+            title = { Text(stringResource(R.string.results_ai_failed_dialog_title)) },
+            text = { Text(stringResource(R.string.results_ai_failed_dialog_body)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmTmdbFallback) {
+                    Text(stringResource(R.string.results_ai_failed_dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissTmdbFallbackDialog) {
+                    Text(stringResource(R.string.results_ai_failed_dialog_dismiss))
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -198,9 +217,13 @@ fun ResultsScreen(
                                             viewModel.loadMore()
                                         } else {
                                             isShowingAd = true
-                                            adManager.showOrSkip(activity) {
+                                            adManager.showOrSkip(activity) { rewardEarned ->
                                                 isShowingAd = false
-                                                viewModel.loadMore()
+                                                if (rewardEarned) {
+                                                    viewModel.loadMore()
+                                                } else {
+                                                    viewModel.onAdClosedWithoutReward()
+                                                }
                                             }
                                         }
                                     },

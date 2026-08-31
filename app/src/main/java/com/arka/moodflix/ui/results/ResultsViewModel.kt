@@ -41,7 +41,8 @@ data class ResultsUiState(
     val usingTmdbFallback: Boolean = false,
     val selectedProviderCount: Int = 0,
     val error: AppError? = null,
-    val message: String? = null
+    val message: String? = null,
+    val showTmdbFallbackDialog: Boolean = false
 ) {
     sealed interface Phase {
         data class Loading(val label: String) : Phase
@@ -96,6 +97,8 @@ class ResultsViewModel @Inject constructor(
 
     private var searchJob: Job? = null
     private var currentPage = 1
+    private var pendingQuery: MoodQuery? = null
+    private var pendingAppend = false
 
     init {
         search(append = false)
@@ -107,6 +110,11 @@ class ResultsViewModel @Inject constructor(
         currentPage += 1
         analytics.log(AnalyticsEvent.LoadMoreTapped)
         search(append = true)
+    }
+
+    /** The rewarded ad was shown but closed before it finished - no more picks this time. */
+    fun onAdClosedWithoutReward() {
+        _uiState.update { it.copy(message = appContext.getString(R.string.results_ad_closed_early)) }
     }
 
     private fun search(append: Boolean) {
@@ -123,6 +131,8 @@ class ResultsViewModel @Inject constructor(
             mediaFilter = mediaFilter,
             page = currentPage
         )
+        pendingQuery = query
+        pendingAppend = append
 
         searchJob = getRecommendations(query)
             .onEach { state -> reduce(state, append) }
@@ -173,20 +183,12 @@ class ResultsViewModel @Inject constructor(
                     )
                 }
 
-                is RecommendationState.FallbackToTmdb -> {
-                    val merged = if (append) {
-                        (current.results + state.movies).distinctBy { it.tmdbId to it.mediaType }
-                    } else {
-                        state.movies
-                    }
-                    if (!append) analytics.log(AnalyticsEvent.SearchFellBackToTmdb)
+                is RecommendationState.AiFailed -> {
+                    if (!append) analytics.log(AnalyticsEvent.SearchFailed)
                     current.copy(
                         phase = ResultsUiState.Phase.Done,
-                        results = merged,
-                        answeredBy = null,
-                        usingTmdbFallback = true,
                         error = state.reason,
-                        message = noNewResultsMessage(append, current.results.size, merged.size)
+                        showTmdbFallbackDialog = true
                     )
                 }
 
@@ -210,5 +212,45 @@ class ResultsViewModel @Inject constructor(
 
     fun dismissMessage() {
         _uiState.update { it.copy(message = null) }
+    }
+
+    /** User agreed, from the fallback dialog, to switch to plain TMDB picks. */
+    fun confirmTmdbFallback() {
+        val query = pendingQuery ?: return
+        val append = pendingAppend
+        _uiState.update {
+            it.copy(
+                showTmdbFallbackDialog = false,
+                phase = ResultsUiState.Phase.Loading(appContext.getString(R.string.results_tmdb_fallback_loading))
+            )
+        }
+        viewModelScope.launch {
+            val movies = getRecommendations.fallbackToTmdb(query)
+            _uiState.update { current ->
+                val merged = if (append) {
+                    (current.results + movies).distinctBy { it.tmdbId to it.mediaType }
+                } else {
+                    movies
+                }
+                if (merged.isEmpty()) {
+                    current.copy(phase = ResultsUiState.Phase.Done, error = AppError.NoMatches)
+                } else {
+                    if (!append) analytics.log(AnalyticsEvent.SearchFellBackToTmdb)
+                    current.copy(
+                        phase = ResultsUiState.Phase.Done,
+                        results = merged,
+                        answeredBy = null,
+                        usingTmdbFallback = true,
+                        error = null,
+                        message = noNewResultsMessage(append, current.results.size, merged.size)
+                    )
+                }
+            }
+        }
+    }
+
+    /** User declined the fallback dialog - leave the AI error on screen. */
+    fun dismissTmdbFallbackDialog() {
+        _uiState.update { it.copy(showTmdbFallbackDialog = false) }
     }
 }
